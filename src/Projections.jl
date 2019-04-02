@@ -1,7 +1,8 @@
 module Projections
 
-using Convex, SCS, LinearAlgebra, Test, BenchmarkTools
+using Convex, SCS, LinearAlgebra, BenchmarkTools, Roots, Statistics
 
-g(x) = x
+include("projection_exact.jl")
+include("projection.jl")
 
 end # module

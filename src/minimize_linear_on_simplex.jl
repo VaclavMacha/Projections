@@ -1,4 +1,9 @@
-function minimize_linear_on_simplex_exact(p0, c, ε, k; verbose::Bool = false)
+function minimize_linear_on_simplex_exact(p0::AbstractArray{<:Real},
+										  c::AbstractArray{<:Real},
+										  ε::Real,
+										  k::Real;
+										  verbose::Bool = false)
+
 	p = Convex.Variable(length(p0))
 
 	objective   = c'*p
@@ -13,7 +18,9 @@ end
 
 
 ## lInf norm
-function minimize_linear_on_simplex_lInf(p0, c, ε)
+function minimize_linear_on_simplex_lInf(p0::AbstractArray{<:Real},
+										 c::AbstractArray{<:Real},
+										 ε::Real)
 
 	if !isapprox(sum(p0), 1, atol = 1e-8) || minimum(p0) < 0
 		@error string("p0 is not a probability distribution: ∑p0 = ", sum(p0), ", min(p0) = ", minimum(p0))
@@ -64,8 +71,11 @@ function minimize_linear_on_simplex_lInf(p0, c, ε)
 	return p[invperm(perm)]
 end
 
+
 ## l1 norm
-function minimize_linear_on_simplex_l1(p0, c, ε)
+function minimize_linear_on_simplex_l1(p0::AbstractArray{<:Real},
+									   c::AbstractArray{<:Real},
+									   ε::Real)
 
 	if !isapprox(sum(p0), 1, atol = 1e-8) || minimum(p0) < 0
 		@error string("p0 is not a probability distribution: ∑p0 = ", sum(p0), ", min(p0) = ", minimum(p0))
@@ -106,7 +116,7 @@ end
 
 
 ## l2 norm
-function fλ(μ, p0, c)
+function find_λ(μ, p0::AbstractArray{<:Real}, c::AbstractArray{<:Real})
 	n = length(p0)
 	s = sort(μ*p0 - c)
 	g = n*s[1] + sum(c)
@@ -123,19 +133,23 @@ function fλ(μ, p0, c)
 				λ = s[i] - (s[i + 1] - s[i])/(g - g_old)*g_old
 				break
 			end
-			# i == n - 1 && @error "khbi"
 		end
 	end
 	return λ
 end
 
-function fμ(μ, p0, c, ε)
-	λ = fλ(μ, p0, c)
+
+function find_μ(μ, p0, c, ε::Real)
+	update_count!()
+	λ = find_λ(μ, p0, c)
 	return sum((min.(c .+ λ, μ.*p0)).^2) - ε^2*μ^2
 end
 
 
-function minimize_linear_on_simplex_l2(p0, c, ε)
+function minimize_linear_on_simplex_l2(p0::AbstractArray{<:Real},
+									   c::AbstractArray{<:Real},
+									   ε::Real;
+									   verbose::Bool = false)
 
 	if !isapprox(sum(p0), 1, atol = 1e-8) || minimum(p0) < 0
 		@error string("p0 is not a probability distribution: ∑p0 = ", sum(p0), ", min(p0) = ", minimum(p0))
@@ -160,17 +174,18 @@ function minimize_linear_on_simplex_l2(p0, c, ε)
 		λ = 0
 		μ = 0
 
-		gμ(μ) = fμ(μ, p0, c, ε)
+		g_μ(μ) = find_μ(μ, p0, c, ε)
 		try
-			μ = Roots.find_zero(gμ, 100, Order1())
-			μ <= 1e-6 && @error("Wrong solution")
+			reset_count!()
+			μ = Roots.find_zero(g_μ, 100, Order1())
+			μ >= 1e-6 || error("Secant method returned infeasible solution.")
 		catch
-			@warn "Secant method failed -> Bisection"
-			μ = Roots.find_zero(gμ, (1e-6, 1e10), Bisection())
+			verbose && @warn "Secant method failed -> Bisection method will be used."
+			μ = Roots.find_zero(g_μ, (1e-6, 1e10), Bisection())
 		end
 
-		λ = fλ(μ, p0, c)
+		λ = find_λ(μ, p0, c)
 		p = @. max(p0 - (c + λ)/μ, 0)
 	end
-	return p
+	return p, get_count()
 end

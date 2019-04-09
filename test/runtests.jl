@@ -9,7 +9,7 @@ include("tests.jl")
 
 	allcombinations = Iterators.product(Dp0, ns)
 
-	@testset "simplex mod 1" begin
+	@testset "simplex" begin
 		@testset "p0 = $dp0, n = $n" for (dp0, n) in allcombinations
 			p0  = rand(dp0(0,1), n)
 			test_projection_simplex(p0)
@@ -63,7 +63,7 @@ include("tests.jl")
 	allcombinations1 = Iterators.product(Dc, Dp0, εs)
 	allcombinations2 = Iterators.product(Dp0, εs)
 
-	@testset "minimize on linear simplex" begin
+	@testset "minimize on linear simplex: l1, l2, lInf norm" begin
 		@testset "p0 = $dp0, c = $dc, ε = $ε" for (dc, dp0, ε) in allcombinations1
 			c   = rand(dc(0,1), n)
 			p0  = rand(dp0(0,1), n)

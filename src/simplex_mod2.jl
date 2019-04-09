@@ -1,4 +1,9 @@
-function simplex_mod2_exact(p0, q0, C1::Real, C2::Integer; verbose::Bool = false)
+function simplex_mod2_exact(p0::AbstractArray{<:Real},
+						    q0::AbstractArray{<:Real},
+						    C1::Real,
+						    C2::Integer;
+						    verbose::Bool = false)
+
 	p = Convex.Variable(length(p0))
 	q = Convex.Variable(length(q0))
 
@@ -16,7 +21,7 @@ function simplex_mod2_exact(p0, q0, C1::Real, C2::Integer; verbose::Bool = false
 end
 
 
-function find_λ(μ::Real, s::AbstractArray{<:Real}, C2::Integer)
+function find_λ(μ, s, C2::Integer)
 	i, j, d  = 2, 1, 1
 	λ, λ_old = s[1], 0
 	g, g_old = -C2*μ, -C2*μ
@@ -41,14 +46,18 @@ function find_λ(μ::Real, s::AbstractArray{<:Real}, C2::Integer)
 end
 
 
-function find_μ(μ::Real, s::AbstractArray{<:Real}, p0::AbstractArray{<:Real}, q0::AbstractArray{<:Real}, C1::Real, C2::Integer)
-	λ = find_λ(μ, s, C2)
+function find_μ(μ, s, p0, q0, C1::Real, C2::Integer)
 	update_count!()
+	λ = find_λ(μ, s, C2)
 	return sum(min.(max.(p0 .- λ .+ sum(max.(q0 .+ λ .- μ, 0))/C2, 0), C1)) - C2*μ
 end
 
 
-function simplex_mod2(p0::AbstractArray{<:Real}, q0::AbstractArray{<:Real}, C1::Real, C2::Integer)
+function simplex_mod2(p0::AbstractArray{<:Real},
+					  q0::AbstractArray{<:Real},
+					  C1::Real,
+					  C2::Integer;
+					  verbose::Bool = false)
 
 	if C2 >= length(q0)
 		@error "No feasible solution: C2 < length(q0) needed."
@@ -59,17 +68,20 @@ function simplex_mod2(p0::AbstractArray{<:Real}, q0::AbstractArray{<:Real}, C1::
 		p = zero(p0)
 		q = zero(q0)
 	else
-		λ, μ, n = 0, 0, length(q0)
+		λ, μ, n = 0, 0, length(p0)
 		s       = vcat(.- sort(q0; rev = true), Inf)
 		g_μ(μ)  = find_μ(μ, s, p0, q0, C1, C2)
 
 		try
 			reset_count!()
 			μ = Roots.find_zero(g_μ, n*C1/(2*C2)/100, Order1())
-			μ <= 0 && @error "Wrong solution"
+			μ > 0 || error("Secant method returned infeasible solution.")
 		catch
-			@warn "Secant method failed -> Bisection"
-			μ = Roots.find_zero(g_μ, (1e-10, n*C1/C2), Bisection())
+			verbose && @warn "Secant method failed -> Bisection method will be used."
+			lb = 1e-10
+			ub = n*C1/C2 + 1e-6
+
+			μ  = Roots.find_zero(g_μ, (lb, ub), Bisection())
 		end
 
 		λ = find_λ(μ, C2, s)

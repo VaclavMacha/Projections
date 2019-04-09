@@ -7,7 +7,7 @@ function test_projection_simplex(p0; atol1::Real = 1e-2, atol2::Real = 1e-6)
 
 	@testset "simplex projection:" begin
 		@test err(L(p,p0), L(pe,p0); atol = atol1)
-		@test sum(p) ≈ 1  atol = atol2
+		@test sum(p) ≈ 1  atol = atol1
 		@test minimum(p) >= - atol2
 		@test maximum(p) <= 1 + atol2
 	end;
@@ -16,11 +16,11 @@ end
 
 function test_projection_simplex_mod1(p0, q0, r0::Real, C1::Real, C2::Real; atol1::Real = 1e-2, atol2::Real = 1e-6)
 	pe, qe, re = Projections.simplex_mod1_exact(p0, q0, r0, C1, C2)
-	p, q, r    = Projections.simplex_mod1(p0, q0, r0, C1, C2)
+	p, q, r,   = Projections.simplex_mod1(p0, q0, r0, C1, C2)
 
 	@testset "simplex mod1 projection:" begin
 		@test err(L(p,p0,q,q0,r,r0), L(pe,p0,qe,q0,re,r0); atol = atol1)
-		@test sum(p) ≈ sum(q)  atol = atol2
+		@test sum(p) ≈ sum(q)  atol = atol1
 		@test minimum(p) >= - atol2
 		@test minimum(q) >= - atol2
 		@test maximum(p) <= C1 + atol2
@@ -31,11 +31,11 @@ end
 
 function test_projection_simplex_mod2(p0, q0, C1::Real, C2::Integer; atol1::Real = 1e-2, atol2::Real = 1e-6)
 	pe, qe = Projections.simplex_mod2_exact(p0, q0, C1, C2)
-	p, q    = Projections.simplex_mod2(p0, q0, C1, C2)
+	p, q,  = Projections.simplex_mod2(p0, q0, C1, C2)
 
 	@testset "simplex mod2 projection:" begin
 		@test err(L(p,p0,q,q0), L(pe,p0,qe,q0); atol = atol1)
-		@test sum(p) ≈ sum(q)  atol = atol2
+		@test sum(p) ≈ sum(q)  atol = atol1
 		@test minimum(p) >= - atol2
 		@test minimum(q) >= - atol2
 		@test maximum(p) <= C1 + atol2
@@ -51,7 +51,7 @@ function test_minimize_linear_on_simplex(p0, c, ε::Real, k::Real; atol1::Real =
 	elseif k == 1
 		p = Projections.minimize_linear_on_simplex_l1(p0, c, ε)
 	elseif k == 2
-		p = Projections.minimize_linear_on_simplex_l2(p0, c, ε)
+		p, = Projections.minimize_linear_on_simplex_l2(p0, c, ε)
 	else
 		@error "k ∉ {1, 2, Inf}"
 		return nothing
@@ -61,9 +61,22 @@ function test_minimize_linear_on_simplex(p0, c, ε::Real, k::Real; atol1::Real =
 		@test c'*p ≈ c'*pe  atol = atol1
 
 		@test c'*p ≈ c'*pe  atol = atol1
-		@test sum(p) ≈ 1  atol = atol2
+		@test sum(p) ≈ 1  atol = atol1
 		@test minimum(p) >= - atol2
 		@test norm(p - p0, k) <= ε + atol2
 	end;
 	return nothing
 end
+
+# using Revise
+# using Projections, Test, Distributions, LinearAlgebra
+#
+# n  = 100
+# m  = 10
+# p0 = rand(Normal(0,1), n)
+# q0 = rand(Normal(0,1), m)
+# C1 = 1
+# C2 = 5
+#
+# # pe, qe = Projections.simplex_mod2_exact(p0, q0, C1, C2)
+# p, q   = Projections.simplex_mod2(p0, q0, C1, C2)

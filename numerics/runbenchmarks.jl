@@ -20,7 +20,7 @@ function benchmark_plot(n,t, err, cnt = Float64[]; title::String   = "title",
     isempty(type) || savefig(joinpath(path, string(title, ".", type)))
 end
 
-l = 1:0.25:7
+l = 1:0.25:5
 n = ceil.(Int64, 10 .^ l)
 path = "./Projections/numerics/times"
 type = "svg"
@@ -31,12 +31,12 @@ type = "svg"
 benchmark_plot(n, t1, std1; title = "Simplex", path = path, type = type)
 
 ## benchmark simplex_mod1
-@time t2, std2, cnt2 = benchmark_simplex_mod1(l);
-benchmark_plot(n, t2, std2, cnt2; title = "Simplex_mod1", path = path, type = type, max_rep = 20)
+@time t2, std2, cnt2 = benchmark_simplex_mod1(l, max_rep = 20);
+benchmark_plot(n, t2, std2, cnt2; title = "Simplex_mod1", path = path, type = type)
 
 ## benchmark simplex_mod2
-@time t3, std3, cnt3 = benchmark_simplex_mod2(l);
-benchmark_plot(n, t3, std3, cnt3; title = "Simplex_mod2", path = path, type = type, max_rep = 20)
+@time t3, std3, cnt3 = benchmark_simplex_mod2(l, max_rep = 20);
+benchmark_plot(n, t3, std3, cnt3; title = "Simplex_mod2", path = path, type = type)
 
 ## benchmark minimize_linear_on_simplex_lInf
 @time t4, std4 = benchmark_minimize_linear_on_simplex(l, Inf);

@@ -47,7 +47,7 @@ end
 
 
 function find_μ(μ, s, p0, q0, C1::Real, C2::Integer)
-	update_count!()
+	update_stats!()
 	λ = find_λ(μ, s, C2)
 	return sum(min.(max.(p0 .- λ .+ sum(max.(q0 .+ λ .- μ, 0))/C2, 0), C1)) - C2*μ
 end
@@ -73,15 +73,21 @@ function simplex_mod2(p0::AbstractArray{<:Real},
 		g_μ(μ)  = find_μ(μ, s, p0, q0, C1, C2)
 
 		try
-			reset_count!()
-			μ = Roots.find_zero(g_μ, n*C1/(2*C2)/100, Order1())
-			μ > 0 || error("Secant method returned infeasible solution.")
+			reset_stats!()
+			μ = Roots.secant_method(g_μ, n*C1/(2*C2)/100)
+
+			if isnan(μ) ||  μ <= 0
+				isnan(μ) ? msg = "Secant method failed." : "Secant method returned infeasible solution."
+				verbose && @warn(msg)
+				error("Secant method failed")
+			end
 		catch
+			update_key!(:bisection)
 			verbose && @warn "Secant method failed -> Bisection method will be used."
 			lb = 1e-10
 			ub = n*C1/C2 + 1e-6
 
-			μ  = Roots.find_zero(g_μ, (lb, ub), Bisection())
+			μ  = Roots.bisection(g_μ, lb, ub)
 		end
 
 		λ = find_λ(μ, C2, s)
@@ -89,5 +95,5 @@ function simplex_mod2(p0::AbstractArray{<:Real},
 		p = @. max(min(p0 - λ + δ, C1), 0)
 		q = @. max(min(q0 + λ, μ), 0)
 	end
-	return p, q, get_count()
+	return p, q, get_stats()
 end

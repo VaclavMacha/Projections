@@ -140,7 +140,7 @@ end
 
 
 function find_μ(μ, p0, c, ε::Real)
-	update_count!()
+	update_stats!()
 	λ = find_λ(μ, p0, c)
 	return sum((min.(c .+ λ, μ.*p0)).^2) - ε^2*μ^2
 end
@@ -176,16 +176,22 @@ function minimize_linear_on_simplex_l2(p0::AbstractArray{<:Real},
 
 		g_μ(μ) = find_μ(μ, p0, c, ε)
 		try
-			reset_count!()
-			μ = Roots.find_zero(g_μ, 100, Order1())
-			μ >= 1e-6 || error("Secant method returned infeasible solution.")
+			reset_stats!()
+			μ = Roots.secant_method(g_μ, 100)
+			
+			if isnan(μ) ||  μ <= 1e-6
+				isnan(μ) ? msg = "Secant method failed." : "Secant method returned infeasible solution."
+				verbose && @warn(msg)
+				error("Secant method failed")
+			end
 		catch
+			update_key!(:bisection)
 			verbose && @warn "Secant method failed -> Bisection method will be used."
-			μ = Roots.find_zero(g_μ, (1e-6, 1e10), Bisection())
+			μ = Roots.bisection(g_μ, 1e-6, 1e10)
 		end
 
 		λ = find_λ(μ, p0, c)
 		p = @. max(p0 - (c + λ)/μ, 0)
 	end
-	return p, get_count()
+	return p, get_stats()
 end

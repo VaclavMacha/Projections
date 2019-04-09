@@ -51,7 +51,7 @@ function benchmark_simplex_mod1(l::Real;
 
 	t = map(1:max_rep) do rep
 		val, t = @timed Projections.simplex_mod1(p0, q0, r0, C1, C2)
-		return [t val[end]]
+		return [t val[end].evals]
 	end |> rows -> reduce(vcat, rows)
 	return [mean(t; dims = 1) std(t[:,1])]
 end
@@ -86,7 +86,7 @@ function benchmark_simplex_mod2(l::Real;
 
 	t = map(1:max_rep) do rep
 		val, t = @timed Projections.simplex_mod2(p0, q0, C1, C2)
-		return [t val[end]]
+		return [t val[end].evals]
 	end |> rows -> reduce(vcat, rows)
 	return [mean(t; dims = 1) std(t[:,1])]
 end
@@ -127,7 +127,7 @@ function benchmark_minimize_linear_on_simplex(l::Real,
 			return t
 		elseif k == 2
 			val, t = @timed Projections.minimize_linear_on_simplex_l2(p0, c, ε)
-			return [t val[end]]
+			return [t val[end].evals]
 		else
 			@error "k ∉ {1, 2, Inf}"
 			return NaN

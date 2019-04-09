@@ -67,16 +67,3 @@ function test_minimize_linear_on_simplex(p0, c, ε::Real, k::Real; atol1::Real =
 	end;
 	return nothing
 end
-
-# using Revise
-# using Projections, Test, Distributions, LinearAlgebra
-#
-# n  = 100
-# m  = 10
-# p0 = rand(Normal(0,1), n)
-# q0 = rand(Normal(0,1), m)
-# C1 = 1
-# C2 = 5
-#
-# # pe, qe = Projections.simplex_mod2_exact(p0, q0, C1, C2)
-# p, q   = Projections.simplex_mod2(p0, q0, C1, C2)

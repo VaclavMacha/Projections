@@ -1,4 +1,4 @@
-function minimize_linear_on_simplex_exact(p0, c, ε, k)
+function minimize_linear_on_simplex_exact(p0, c, ε, k; verbose::Bool = false)
 	p = Convex.Variable(length(p0))
 
 	objective   = c'*p
@@ -7,7 +7,7 @@ function minimize_linear_on_simplex_exact(p0, c, ε, k)
 				   norm(p - p0, k) <= ε]
 
 	problem = Convex.minimize(objective, constraints)
-	Convex.solve!(problem, SCSSolver(verbose = 0))
+	Convex.solve!(problem, ECOSSolver(verbose = verbose), verbose = verbose)
 	return vec(p.value)
 end
 
@@ -26,24 +26,38 @@ function minimize_linear_on_simplex_lInf(p0, c, ε)
 	i = 1
 	j = length(c)
 
+
+	δ_down = 0
 	while i < j
-		δ1   = min(1 - p[i], ε)
-		δ2   = 0
+		δ1    = min(1 - p[i], ε)
+		δ2    = 0
 		p[i] += δ1
 
 		while δ2 < δ1
+
 			if p[j] >= δ1 - δ2
-				p[j] += - δ1 + δ2
-				break
-			else
-				δ2 = δ2 + p[j]
-				p[j] = 0
-				j -= 1
-				if i == j
-					p[i] += - δ1 + δ2
+				if δ1 - δ2 <= ε - δ_down
+					p[j]   -= δ1 - δ2
+					δ_down += δ1 - δ2
 					break
+				else
+					δ2    += ε - δ_down
+					p[j]  -= ε - δ_down
+					δ_down = 0
+					j -= 1
 				end
+			else
+				δ2     += min(p[j], ε - δ_down)
+				p[j]   -= min(p[j], ε - δ_down)
+				δ_down = 0
+				j      -= 1
 			end
+
+			if i == j
+				p[i] += - δ1 + δ2
+				break
+			end
+
 		end
 		i += 1
 	end
@@ -94,13 +108,13 @@ end
 ## l2 norm
 function fλ(μ, p0, c)
 	n = length(p0)
-	s = sort(μ.*p0 .- c)
+	s = sort(μ*p0 - c)
 	g = n*s[1] + sum(c)
 	g_old = 0
 	λ = 0
 
 	if g > 0
-		@error "wKEVBLQe"
+		λ = - mean(c)
 	else
 		for i in 1:n-1
 			g_old = g
@@ -109,10 +123,9 @@ function fλ(μ, p0, c)
 				λ = s[i] - (s[i + 1] - s[i])/(g - g_old)*g_old
 				break
 			end
-			i == n - 1 && @error "khbi"
+			# i == n - 1 && @error "khbi"
 		end
 	end
-
 	return λ
 end
 
@@ -126,6 +139,10 @@ function minimize_linear_on_simplex_l2(p0, c, ε)
 
 	if !isapprox(sum(p0), 1, atol = 1e-8) || minimum(p0) < 0
 		@error string("p0 is not a probability distribution: ∑p0 = ", sum(p0), ", min(p0) = ", minimum(p0))
+		return p0
+	end
+
+	if iszero(ε)
 		return p0
 	end
 

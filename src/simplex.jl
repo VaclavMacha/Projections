@@ -1,4 +1,4 @@
-function simplex_exact(p0::AbstractArray{<:Real})
+function simplex_exact(p0::AbstractArray{<:Real}; verbose::Bool = false)
     p = Convex.Variable(length(p0))
 
 	objective   = sumsquares(p - p0)/2
@@ -6,7 +6,7 @@ function simplex_exact(p0::AbstractArray{<:Real})
 				   p >= 0]
 
 	problem = Convex.minimize(objective, constraints)
-	Convex.solve!(problem, SCS.SCSSolver(verbose = 0))
+	Convex.solve!(problem, ECOSSolver(verbose = verbose), verbose = verbose)
 
 	return p.value
 end

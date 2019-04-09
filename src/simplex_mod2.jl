@@ -1,4 +1,4 @@
-function simplex_mod2_exact(p0::AbstractArray{<:Real}, q0::AbstractArray{<:Real}, C1::Real, C2::Integer)
+function simplex_mod2_exact(p0, q0, C1::Real, C2::Integer; verbose::Bool = false)
 	p = Convex.Variable(length(p0))
 	q = Convex.Variable(length(q0))
 
@@ -10,7 +10,7 @@ function simplex_mod2_exact(p0::AbstractArray{<:Real}, q0::AbstractArray{<:Real}
 				   q >= 0]
 
 	problem = Convex.minimize(objective, constraints)
-	Convex.solve!(problem, SCSSolver(verbose = 0))
+	Convex.solve!(problem, ECOSSolver(verbose = verbose), verbose = verbose)
 
 	return p.value, q.value
 end
@@ -43,13 +43,17 @@ end
 
 function find_μ(μ::Real, s::AbstractArray{<:Real}, p0::AbstractArray{<:Real}, q0::AbstractArray{<:Real}, C1::Real, C2::Integer)
 	λ = find_λ(μ, s, C2)
+	update_count!()
 	return sum(min.(max.(p0 .- λ .+ sum(max.(q0 .+ λ .- μ, 0))/C2, 0), C1)) - C2*μ
 end
 
 
 function simplex_mod2(p0::AbstractArray{<:Real}, q0::AbstractArray{<:Real}, C1::Real, C2::Integer)
 
-	C2 >= length(q0) && @error "No feasible solution: C2 < length(q0) needed."
+	if C2 >= length(q0)
+		@error "No feasible solution: C2 < length(q0) needed."
+		return p0, q0
+	end
 
 	if mean(partialsort(q0, 1:C2; rev = true)) + maximum(p0) <= 0
 		p = zero(p0)
@@ -60,7 +64,8 @@ function simplex_mod2(p0::AbstractArray{<:Real}, q0::AbstractArray{<:Real}, C1::
 		g_μ(μ)  = find_μ(μ, s, p0, q0, C1, C2)
 
 		try
-			μ = Roots.find_zero(g_μ, min(10, n*C1/(2*C2)), Order1())
+			reset_count!()
+			μ = Roots.find_zero(g_μ, n*C1/(2*C2)/100, Order1())
 			μ <= 0 && @error "Wrong solution"
 		catch
 			@warn "Secant method failed -> Bisection"
@@ -72,5 +77,5 @@ function simplex_mod2(p0::AbstractArray{<:Real}, q0::AbstractArray{<:Real}, C1::
 		p = @. max(min(p0 - λ + δ, C1), 0)
 		q = @. max(min(q0 + λ, μ), 0)
 	end
-	return p, q
+	return p, q, get_count()
 end

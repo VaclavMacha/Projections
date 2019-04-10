@@ -23,14 +23,14 @@ function simplex_mod1_exact(p0::AbstractArray{<:Real},
 end
 
 
-function find_λ(μ, q0, r0::Real, C2::Real)
+function find_λ_mod1(μ, q0, r0::Real, C2::Real)
 	return C2*r0 + C2^2*sum(max.(q0 .- μ, 0)) - μ
 end
 
 
-function find_μ(μ, p0, q0, r0, C1::Real, C2::Real)
+function find_μ_mod1(μ, p0, q0, r0, C1::Real, C2::Real)
 	update_stats!()
-	λ = find_λ(μ, q0, r0, C2)
+	λ = find_λ_mod1(μ, q0, r0, C2)
 	return sum(min.(max.(p0 .- λ, 0), C1)) - sum(min.(max.(q0 .+ λ, 0), λ + μ))
 end
 
@@ -48,12 +48,12 @@ function simplex_mod1(p0::AbstractArray{<:Real},
 		r = zero(r0)
 	else
 		λ, μ   = 0, 0
-		g_μ(μ) = find_μ(μ, p0, q0, r0, C1, C2)
+		g_μ(μ) = find_μ_mod1(μ, p0, q0, r0, C1, C2)
 
 		try
 			reset_stats!()
 			μ = Roots.secant_method(g_μ, 1)
-			
+
 			if isnan(μ) ||  λ + μ <= 0
 				isnan(μ) ? msg = "Secant method failed." : "Secant method returned infeasible solution."
 				verbose && @warn(msg)
@@ -71,7 +71,7 @@ function simplex_mod1(p0::AbstractArray{<:Real},
 			μ = Roots.bisection(g_μ, lb, ub)
 		end
 
-		λ = find_λ(μ, q0, r0, C2)
+		λ = find_λ_mod1(μ, q0, r0, C2)
 		p = @. min(max(p0 - λ, 0), C1)
 		q = @. min(max(q0 + λ, 0), λ + μ)
 		r = (λ + μ)/C2

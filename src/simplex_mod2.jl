@@ -21,7 +21,7 @@ function simplex_mod2_exact(p0::AbstractArray{<:Real},
 end
 
 
-function find_λ(μ, s, C2::Integer)
+function find_λ_mod2(μ, s, C2::Integer)
 	i, j, d  = 2, 1, 1
 	λ, λ_old = s[1], 0
 	g, g_old = -C2*μ, -C2*μ
@@ -46,9 +46,9 @@ function find_λ(μ, s, C2::Integer)
 end
 
 
-function find_μ(μ, s, p0, q0, C1::Real, C2::Integer)
+function find_μ_mod2(μ, s, p0, q0, C1::Real, C2::Integer)
 	update_stats!()
-	λ = find_λ(μ, s, C2)
+	λ = find_λ_mod2(μ, s, C2)
 	return sum(min.(max.(p0 .- λ .+ sum(max.(q0 .+ λ .- μ, 0))/C2, 0), C1)) - C2*μ
 end
 
@@ -70,7 +70,7 @@ function simplex_mod2(p0::AbstractArray{<:Real},
 	else
 		λ, μ, n = 0, 0, length(p0)
 		s       = vcat(.- sort(q0; rev = true), Inf)
-		g_μ(μ)  = find_μ(μ, s, p0, q0, C1, C2)
+		g_μ(μ)  = find_μ_mod2(μ, s, p0, q0, C1, C2)
 
 		try
 			reset_stats!()
@@ -90,7 +90,7 @@ function simplex_mod2(p0::AbstractArray{<:Real},
 			μ  = Roots.bisection(g_μ, lb, ub)
 		end
 
-		λ = find_λ(μ, C2, s)
+		λ = find_λ_mod2(μ, s, C2)
 		δ = sum(max.(q0 .+ λ .- μ, 0))/C2
 		p = @. max(min(p0 - λ + δ, C1), 0)
 		q = @. max(min(q0 + λ, μ), 0)

@@ -2,7 +2,7 @@ using Projections, Test, Distributions, LinearAlgebra
 
 include("tests.jl")
 
-@testset "All projections tests" begin
+@time @testset "All projections tests" begin
 	## simplex
 	ns  = [10, 50, 100]
 	Dp0 = [Uniform, Normal]
@@ -15,6 +15,7 @@ include("tests.jl")
 			test_projection_simplex(p0)
 		end
 	end;
+
 
 	## simplex mod 1
 	Dp0 = [Uniform, Normal]
@@ -31,9 +32,10 @@ include("tests.jl")
 		@testset "p0 = $dp0, q0 = $dq0, r0 = $r0, n = $n, m = $m, C1 = $C1, C2 = $C2" for (dp0, dq0, r0, n, m, C1, C2) in allcombinations
 			p0  = rand(dp0(0,1), n)
 			q0  = rand(dp0(0,1), m)
-			C2 < m && test_projection_simplex_mod1(p0, q0, r0, C1, C2)
+			test_projection_simplex_mod1(p0, q0, r0, C1, C2)
 		end
 	end;
+
 
 	## simplex mod 2
 	Dp0 = [Uniform, Normal]
@@ -53,6 +55,44 @@ include("tests.jl")
 			C2 < m && test_projection_simplex_mod2(p0, q0, C1, C2)
 		end
 	end;
+
+
+	## simplex mod 3
+	Dp0 = [Uniform, Normal]
+	Dq0 = [Uniform, Normal]
+	r0s = vcat(-100, -10, 0:0.1:1, 10, 100)
+	ns  = [10, 100]
+	ms  = [10, 100]
+
+	allcombinations = Iterators.product(Dp0, Dq0, r0s, ns, ms)
+
+	@testset "simplex mod 3" begin
+		@testset "p0 = $dp0, q0 = $dq0, r0 = $r0, n = $n, m = $m" for (dp0, dq0, r0, n, m) in allcombinations
+			p0  = rand(dp0(0,1), n)
+			q0  = rand(dp0(0,1), m)
+			test_projection_simplex_mod3(p0, q0, r0)
+		end
+	end;
+
+
+	## simplex mod 4
+	Dp0 = [Uniform, Normal]
+	Dq0 = [Uniform, Normal]
+	ns  = [10, 100]
+	ms  = [10, 100]
+	Cs  = vcat(1:5, 10, 20, 99)
+
+	allcombinations = Iterators.product(Dp0, Dq0, ns, ms, Cs)
+
+	@testset "simplex mod 4" begin
+		@testset "p0 = $dp0, q0 = $dq0, n = $n, m = $m, C = $C" for (dp0, dq0, n, m, C) in allcombinations
+			p0  = rand(dp0(0,1), n)
+			q0  = rand(dp0(0,1), m)
+
+			C < m && test_projection_simplex_mod4(p0, q0, C)
+		end
+	end;
+
 
 	## minimize on linear simplex l1, l2 and lInf
 	Dc  = [Uniform, Normal]

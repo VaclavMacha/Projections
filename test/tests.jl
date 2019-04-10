@@ -1,6 +1,7 @@
 L(p, p0, q = 0, q0 = 0, r = 0, r0 = 0) = norm(p - p0)^2 + norm(q - q0)^2 + (r - r0)^2
 err(x, y; atol = 1e-2, rtol = atol^2)  = isapprox(x, y; atol = atol, rtol = rtol) || x <= y + atol
 
+
 function test_projection_simplex(p0; atol1::Real = 1e-2, atol2::Real = 1e-6)
 	pe = Projections.simplex_exact(p0)
 	p  = Projections.simplex(p0)
@@ -13,6 +14,7 @@ function test_projection_simplex(p0; atol1::Real = 1e-2, atol2::Real = 1e-6)
 	end;
 	return nothing
 end
+
 
 function test_projection_simplex_mod1(p0, q0, r0::Real, C1::Real, C2::Real; atol1::Real = 1e-2, atol2::Real = 1e-6)
 	pe, qe, re = Projections.simplex_mod1_exact(p0, q0, r0, C1, C2)
@@ -29,6 +31,7 @@ function test_projection_simplex_mod1(p0, q0, r0::Real, C1::Real, C2::Real; atol
 	return nothing
 end
 
+
 function test_projection_simplex_mod2(p0, q0, C1::Real, C2::Integer; atol1::Real = 1e-2, atol2::Real = 1e-6)
 	pe, qe = Projections.simplex_mod2_exact(p0, q0, C1, C2)
 	p, q,  = Projections.simplex_mod2(p0, q0, C1, C2)
@@ -43,6 +46,36 @@ function test_projection_simplex_mod2(p0, q0, C1::Real, C2::Integer; atol1::Real
 	end;
 	return nothing
 end
+
+
+function test_projection_simplex_mod3(p0, q0, r0::Real; atol1::Real = 1e-2, atol2::Real = 1e-6)
+	pe, qe, re = Projections.simplex_mod3_exact(p0, q0, r0)
+	p, q, r,   = Projections.simplex_mod3(p0, q0, r0)
+
+	@testset "simplex mod3 projection:" begin
+		@test err(L(p,p0,q,q0,r,r0), L(pe,p0,qe,q0,re,r0); atol = atol1)
+		@test sum(p) ≈ sum(q)  atol = atol1
+		@test minimum(p) >= - atol2
+		@test minimum(q) >= - atol2
+	end;
+	return nothing
+end
+
+
+function test_projection_simplex_mod4(p0, q0, C::Integer; atol1::Real = 1e-2, atol2::Real = 1e-6)
+	pe, qe = Projections.simplex_mod4_exact(p0, q0, C)
+	p, q,  = Projections.simplex_mod4(p0, q0, C)
+
+	@testset "simplex mod4 projection:" begin
+		# @test err(L(p,p0,q,q0), L(pe,p0,qe,q0); atol = atol1)
+		@test sum(p) ≈ sum(q)  atol = atol1
+		# @test minimum(p) >= - atol2
+		# @test minimum(q) >= - atol2
+		# @test maximum(q) <= sum(p)/C + atol2
+	end;
+	return nothing
+end
+
 
 function test_minimize_linear_on_simplex(p0, c, ε::Real, k::Real; atol1::Real = 1e-2, atol2::Real = 1e-6)
 	pe = Projections.minimize_linear_on_simplex_exact(p0, c, ε, k)

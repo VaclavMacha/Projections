@@ -57,7 +57,7 @@ function simplex_mod2(p0::AbstractArray{<:Real},
 					  q0::AbstractArray{<:Real},
 					  C1::Real,
 					  C2::Integer;
-					  verbose::Bool = false)
+					  kwargs...)
 
 	if C2 >= length(q0)
 		@error "No feasible solution: C2 < length(q0) needed."
@@ -68,32 +68,21 @@ function simplex_mod2(p0::AbstractArray{<:Real},
 		p = zero(p0)
 		q = zero(q0)
 	else
-		λ, μ, n = 0, 0, length(p0)
-		s       = vcat(.- sort(q0; rev = true), Inf)
-		g_μ(μ)  = find_μ_mod2(μ, s, p0, q0, C1, C2)
+		s  = vcat(.- sort(q0; rev = true), Inf)
+		n  = length(p0)
+		λ  = 0
+		μ  = n*C1/(2*C2)/100
+		lb = 1e-10
+		ub = n*C1/C2 + 1e-6
 
-		try
-			reset_stats!()
-			μ = Roots.secant_method(g_μ, n*C1/(2*C2)/100)
+		g_μ(μ) = find_μ_mod2(μ, s, p0, q0, C1, C2)
 
-			if isnan(μ) ||  μ <= 0
-				isnan(μ) ? msg = "Secant method failed." : "Secant method returned infeasible solution."
-				verbose && @warn(msg)
-				error("Secant method failed")
-			end
-		catch
-			update_key!(:bisection)
-			verbose && @warn "Secant method failed -> Bisection method will be used."
-			lb = 1e-10
-			ub = n*C1/C2 + 1e-6
-
-			μ  = Roots.bisection(g_μ, lb, ub)
-		end
-
+		μ = find_root(g_μ, μ, lb, ub ; kwargs...)
 		λ = find_λ_mod2(μ, s, C2)
+
 		δ = sum(max.(q0 .+ λ .- μ, 0))/C2
 		p = @. max(min(p0 - λ + δ, C1), 0)
 		q = @. max(min(q0 + λ, μ), 0)
 	end
-	return p, q, get_stats()
+	return p, q, return_stats()
 end

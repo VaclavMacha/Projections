@@ -12,7 +12,6 @@ function test_projection_simplex(p0; atol1::Real = 1e-2, atol2::Real = 1e-6)
 		@test minimum(p) >= - atol2
 		@test maximum(p) <= 1 + atol2
 	end;
-	return nothing
 end
 
 
@@ -28,7 +27,6 @@ function test_projection_simplex_mod1(p0, q0, r0::Real, C1::Real, C2::Real; atol
 		@test maximum(p) <= C1 + atol2
 		@test maximum(q) <= C2*r + atol2
 	end;
-	return nothing
 end
 
 
@@ -44,7 +42,6 @@ function test_projection_simplex_mod2(p0, q0, C1::Real, C2::Integer; atol1::Real
 		@test maximum(p) <= C1 + atol2
 		@test maximum(q) <= sum(p)/C2 + atol2
 	end;
-	return nothing
 end
 
 
@@ -58,7 +55,6 @@ function test_projection_simplex_mod3(p0, q0, r0::Real; atol1::Real = 1e-2, atol
 		@test minimum(p) >= - atol2
 		@test minimum(q) >= - atol2
 	end;
-	return nothing
 end
 
 
@@ -67,13 +63,12 @@ function test_projection_simplex_mod4(p0, q0, C::Integer; atol1::Real = 1e-2, at
 	p, q,  = Projections.simplex_mod4(p0, q0, C)
 
 	@testset "simplex mod4 projection:" begin
-		# @test err(L(p,p0,q,q0), L(pe,p0,qe,q0); atol = atol1)
+		@test err(L(p,p0,q,q0), L(pe,p0,qe,q0); atol = atol1)
 		@test sum(p) ≈ sum(q)  atol = atol1
-		# @test minimum(p) >= - atol2
-		# @test minimum(q) >= - atol2
-		# @test maximum(q) <= sum(p)/C + atol2
+		@test minimum(p) >= - atol2
+		@test minimum(q) >= - atol2
+		@test maximum(q) <= sum(p)/C + atol2
 	end;
-	return nothing
 end
 
 
@@ -98,5 +93,4 @@ function test_minimize_linear_on_simplex(p0, c, ε::Real, k::Real; atol1::Real =
 		@test minimum(p) >= - atol2
 		@test norm(p - p0, k) <= ε + atol2
 	end;
-	return nothing
 end

@@ -17,6 +17,7 @@ function minimize_linear_on_simplex_exact(p0::AbstractArray{<:Real},
 end
 
 
+## --------------------------------------------------------------------------------------------------------
 ## lInf norm
 function minimize_linear_on_simplex_lInf(p0::AbstractArray{<:Real},
 										 c::AbstractArray{<:Real},
@@ -72,6 +73,7 @@ function minimize_linear_on_simplex_lInf(p0::AbstractArray{<:Real},
 end
 
 
+## --------------------------------------------------------------------------------------------------------
 ## l1 norm
 function minimize_linear_on_simplex_l1(p0::AbstractArray{<:Real},
 									   c::AbstractArray{<:Real},
@@ -115,6 +117,7 @@ function minimize_linear_on_simplex_l1(p0::AbstractArray{<:Real},
 end
 
 
+## --------------------------------------------------------------------------------------------------------
 ## l2 norm
 function find_λ(μ, p0::AbstractArray{<:Real}, c::AbstractArray{<:Real})
 	n = length(p0)
@@ -139,17 +142,53 @@ function find_λ(μ, p0::AbstractArray{<:Real}, c::AbstractArray{<:Real})
 end
 
 
+f_μ(μ, λ, p0, c, ε::Real) = sum((min.(c .+ λ, μ.*p0)).^2) - ε^2*μ^2
+
+
 function find_μ(μ, p0, c, ε::Real)
 	update_stats!()
 	λ = find_λ(μ, p0, c)
-	return sum((min.(c .+ λ, μ.*p0)).^2) - ε^2*μ^2
+	return f_μ(μ, λ, p0, c, ε)
+end
+
+
+function ∇f_μ(μ, λ, p0, c, ε::Real)
+	pi = @views @. p0[c + λ >= μ*p0]
+
+	return 2*μ*(sum(pi)^2/(length(p0) - length(pi)) + sum(abs2, pi) - ε^2)
+end
+
+
+function Newton(μ0, p0, c, ε::Real; maxiter::Integer = 100, atol::Real = 1e-8, kwargs...)
+	reset_stats!()
+	new_key!(:newton)
+	μ, λ, f = μ0, 0, find_μ(μ0, p0, c, ε)
+
+	while f >= 0
+		if f == 0
+			return μ
+		else
+			μ *= 10
+		end
+		λ = find_λ(μ, p0, c)
+		f = f_μ(μ, λ, p0, c, ε)
+	end
+
+	while abs(f) > atol
+		μ -= f/∇f_μ(μ, λ, p0, c, ε)
+
+		update_stats!()
+		λ = find_λ(μ, p0, c)
+		f = f_μ(μ, λ, p0, c, ε)
+	end
+	return μ
 end
 
 
 function minimize_linear_on_simplex_l2(p0::AbstractArray{<:Real},
 									   c::AbstractArray{<:Real},
 									   ε::Real;
-									   verbose::Bool = false)
+									   kwargs...)
 
 	if !isapprox(sum(p0), 1, atol = 1e-8) || minimum(p0) < 0
 		@error string("p0 is not a probability distribution: ∑p0 = ", sum(p0), ", min(p0) = ", minimum(p0))
@@ -171,27 +210,21 @@ function minimize_linear_on_simplex_l2(p0::AbstractArray{<:Real},
 	end
 
 	if norm(p - p0) > ε
-		λ = 0
-		μ = 0
+		λ  = 0
+		μ  = 100
+		lb = 1e-6
+		ub = 1e10
 
 		g_μ(μ) = find_μ(μ, p0, c, ε)
-		try
-			reset_stats!()
-			μ = Roots.secant_method(g_μ, 100)
-			
-			if isnan(μ) ||  μ <= 1e-6
-				isnan(μ) ? msg = "Secant method failed." : "Secant method returned infeasible solution."
-				verbose && @warn(msg)
-				error("Secant method failed")
-			end
-		catch
-			update_key!(:bisection)
-			verbose && @warn "Secant method failed -> Bisection method will be used."
-			μ = Roots.bisection(g_μ, 1e-6, 1e10)
+
+		if :method in keys(kwargs) && kwargs[:method] == :newton
+			μ = Newton(μ, p0, c, ε; kwargs...)
+		else
+			μ = find_root(g_μ, μ, lb, ub; kwargs...)
 		end
 
 		λ = find_λ(μ, p0, c)
 		p = @. max(p0 - (c + λ)/μ, 0)
 	end
-	return p, get_stats()
+	return p, return_stats()
 end

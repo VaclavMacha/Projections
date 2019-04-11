@@ -29,34 +29,24 @@ end
 function simplex_mod3(p0::AbstractArray{<:Real},
 					  q0::AbstractArray{<:Real},
 					  r0::Real;
-					  verbose::Bool = false)
+					  kwargs...)
 
 	if -maximum(q0) > maximum(p0)
 		p = zero(p0)
 		q = zero(q0)
 		r = zero(r0)
 	else
-		λ      = 0
+		λ  = (maximum(p0) - maximum(q0))/2
+		lb = -maximum(q0)
+		ub = maximum(p0)
+
 		g_λ(λ) = find_λ_mod3(λ, p0, q0)
 
-		try
-			reset_stats!()
-			λ = Roots.secant_method(g_λ, (maximum(p0) - maximum(q0))/2)
-
-			if isnan(μ)
-				verbose && @warn("Secant method failed.")
-				error("Secant method failed")
-			end
-		catch
-			update_key!(:bisection)
-			verbose && @warn "Secant method failed -> Bisection method will be used."
-
-			λ = Roots.bisection(g_λ, -maximum(q0), maximum(p0))
-		end
+		λ = find_root(g_λ, λ, lb, ub; kwargs...)
 
 		p = @. max(p0 - λ, 0)
 		q = @. max(q0 + λ, 0)
 		r = max(r0, 1e-4)
 	end
-	return p, q, r, get_stats()
+	return p, q, r, return_stats()
 end

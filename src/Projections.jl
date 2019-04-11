@@ -4,29 +4,25 @@ using Convex, ECOS,  Roots, LinearAlgebra, Statistics
 
 
 mutable struct Stats
-    secant::Integer
-    bisection::Integer
-    evals::Integer
+    evals::Dict
     key::Symbol
 end
 
-stats = Stats(0, 0, 0, :secant)
+stats = Stats(Dict(), :key)
 
-update_stats!()          = setfield!(stats, stats.key, getfield(stats, stats.key) + 1)
-update_key!(key::Symbol) = setfield!(stats, :key, key)
-
-function get_stats()
-    setfield!(stats, :evals, stats.secant + stats.bisection)
-    return stats
+function new_key!(key::Symbol)
+    stats.evals[key] = 0
+    stats.key = key
 end
+update_stats!() = stats.evals[stats.key] += 1
+return_stats()  = deepcopy(stats.evals)
 
 function reset_stats!()
-    stats.secant = 0
-    stats.bisection = 0
-    stats.evals = 0
-    stats.key = :secant
+    stats.evals = Dict()
+    stats.key   = :key
 end
 
+include("find_root.jl")
 
 include("simplex.jl")
 include("simplex_mod1.jl")

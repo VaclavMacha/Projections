@@ -112,6 +112,8 @@ include("tests.jl")
             test_minimize_linear_on_simplex(p0, c, ε, Inf)
             test_minimize_linear_on_simplex(p0, c, ε, 1)
             test_minimize_linear_on_simplex(p0, c, ε, 2)
+            test_philpott(p0, c, ε, :original)
+            test_philpott(p0, c, ε, :optimized)
 
             sort!(c)
             sort!(p0; rev = true)
@@ -120,6 +122,8 @@ include("tests.jl")
                 test_minimize_linear_on_simplex(p0, c, ε, Inf)
                 test_minimize_linear_on_simplex(p0, c, ε, 1)
                 test_minimize_linear_on_simplex(p0, c, ε, 2)
+                test_philpott(p0, c, ε, :original)
+                test_philpott(p0, c, ε, :optimized)
             end
         end
 
@@ -131,6 +135,8 @@ include("tests.jl")
             test_minimize_linear_on_simplex(p0, c, ε, Inf)
             test_minimize_linear_on_simplex(p0, c, ε, 1)
             test_minimize_linear_on_simplex(p0, c, ε, 2)
+            test_philpott(p0, c, ε, :original)
+            test_philpott(p0, c, ε, :optimized)
         end
     end;
 end;

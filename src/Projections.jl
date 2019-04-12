@@ -30,5 +30,6 @@ include("simplex_mod2.jl")
 include("simplex_mod3.jl")
 include("simplex_mod4.jl")
 include("minimize_linear_on_simplex.jl")
+include("philpott.jl")
 
 end # module

@@ -94,3 +94,24 @@ function test_minimize_linear_on_simplex(p0, c, ε::Real, k::Real; atol1::Real =
         @test norm(p - p0, k) <= ε + atol2
     end;
 end
+
+function test_philpott(p0, c, ε::Real, type::Symbol; atol1::Real = 1e-2, atol2::Real = 1e-6)
+    pe = Projections.minimize_linear_on_simplex_exact(p0, c, ε, 2)
+    if type == :original
+        p = Projections.philpott(p0, c, ε)
+    elseif type == :optimized
+        p = Projections.philpott(p0, c, ε)
+    else
+        @error "type ∉ {:original, :optimized}"
+        return nothing
+    end
+
+    @testset "philpot $type:" begin
+        @test c'*p ≈ c'*pe  atol = atol1
+
+        @test c'*p ≈ c'*pe  atol = atol1
+        @test sum(p) ≈ 1  atol = atol1
+        @test minimum(p) >= - atol2
+        @test norm(p - p0, 2) <= ε + atol2
+    end;
+end

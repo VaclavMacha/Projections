@@ -20,7 +20,7 @@ end
 
 
 function find_μ_mod4(μ, s, p0, q0, C::Integer)
-    update_stats!()
+    add_eval!()
     λ = find_λ_mod2(μ, s, C)
     return sum(max.(p0 .- λ .+ sum(max.(q0 .+ λ .- μ, 0))/C, 0)) - C*μ
 end
@@ -29,6 +29,7 @@ end
 function simplex_mod4(p0::AbstractArray{<:Real},
                       q0::AbstractArray{<:Real},
                       C::Integer;
+                      returnstats::Bool = false,
                       kwargs...)
 
     if C >= length(q0)
@@ -56,5 +57,11 @@ function simplex_mod4(p0::AbstractArray{<:Real},
         p = @. max(p0 - λ + δ, 0)
         q = @. max(min(q0 + λ, μ), 0)
     end
-    return p, q, return_stats()
+
+    if returnstats
+        add_stat!(:μ => μ, :λ => λ, :δ => δ, :lb => lb, :ub => ub)
+        return p, q, return_stats(), return_evals()
+    else
+        return p, q
+    end
 end

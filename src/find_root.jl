@@ -24,7 +24,7 @@ end
 
 
 function find_root_secant(f, x0, xlb, xub; atol::Real = 1e-8, verbose::Bool = false)
-    new_key!(:secant)
+    change_key!(:secant)
     x = Roots.secant_method(f, x0; atol = atol)
 
     if isnan(x)
@@ -40,7 +40,7 @@ end
 
 
 function find_root_bisection(f, x0, xlb, xub; atol::Real = 1e-8, verbose::Bool = false)
-    new_key!(:bisection)
+    change_key!(:bisection)
     x = Roots.bisection(f, xlb, xub; xatol = atol)
 
     if isnan(x)
@@ -52,7 +52,7 @@ function find_root_bisection(f, x0, xlb, xub; atol::Real = 1e-8, verbose::Bool =
 end
 
 # function find_root_falseposition(f, x0, xlb, xub; atol::Real = 1e-8, verbose::Bool = false)
-#     update_key!(:falseposition)
+#     change_key!(:falseposition)
 #     x = Roots.find_zero(f, (xlb, xub), FalsePosition(); atol = atol)
 #
 #     if isnan(x)

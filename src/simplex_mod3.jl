@@ -21,7 +21,7 @@ end
 
 
 function find_λ_mod3(λ::Real, p0, q0)
-    update_stats!()
+    add_eval!()
     sum(max.(p0 .- λ, 0)) - sum(max.(q0 .+ λ, 0))
 end
 
@@ -29,6 +29,7 @@ end
 function simplex_mod3(p0::AbstractArray{<:Real},
                       q0::AbstractArray{<:Real},
                       r0::Real;
+                      returnstats::Bool = false,
                       kwargs...)
 
     if -maximum(q0) > maximum(p0)
@@ -48,5 +49,11 @@ function simplex_mod3(p0::AbstractArray{<:Real},
         q = @. max(q0 + λ, 0)
         r = max(r0, 1e-4)
     end
-    return p, q, r, return_stats()
+
+    if returnstats
+        add_stat!(:λ => λ, :lb => lb, :ub => ub)
+        return p, q, r, return_stats(), return_evals()
+    else
+        return p, q, r
+    end
 end

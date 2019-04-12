@@ -17,7 +17,7 @@ end
 
 function test_projection_simplex_mod1(p0, q0, r0::Real, C1::Real, C2::Real; atol1::Real = 1e-2, atol2::Real = 1e-6)
     pe, qe, re = Projections.simplex_mod1_exact(p0, q0, r0, C1, C2)
-    p, q, r,   = Projections.simplex_mod1(p0, q0, r0, C1, C2)
+    p, q, r    = Projections.simplex_mod1(p0, q0, r0, C1, C2)
 
     @testset "simplex mod1 projection:" begin
         @test err(L(p,p0,q,q0,r,r0), L(pe,p0,qe,q0,re,r0); atol = atol1)
@@ -32,7 +32,7 @@ end
 
 function test_projection_simplex_mod2(p0, q0, C1::Real, C2::Integer; atol1::Real = 1e-2, atol2::Real = 1e-6)
     pe, qe = Projections.simplex_mod2_exact(p0, q0, C1, C2)
-    p, q,  = Projections.simplex_mod2(p0, q0, C1, C2)
+    p, q   = Projections.simplex_mod2(p0, q0, C1, C2)
 
     @testset "simplex mod2 projection:" begin
         @test err(L(p,p0,q,q0), L(pe,p0,qe,q0); atol = atol1)
@@ -47,7 +47,7 @@ end
 
 function test_projection_simplex_mod3(p0, q0, r0::Real; atol1::Real = 1e-2, atol2::Real = 1e-6)
     pe, qe, re = Projections.simplex_mod3_exact(p0, q0, r0)
-    p, q, r,   = Projections.simplex_mod3(p0, q0, r0)
+    p, q, r    = Projections.simplex_mod3(p0, q0, r0)
 
     @testset "simplex mod3 projection:" begin
         @test err(L(p,p0,q,q0,r,r0), L(pe,p0,qe,q0,re,r0); atol = atol1)
@@ -60,7 +60,7 @@ end
 
 function test_projection_simplex_mod4(p0, q0, C::Integer; atol1::Real = 1e-2, atol2::Real = 1e-6)
     pe, qe = Projections.simplex_mod4_exact(p0, q0, C)
-    p, q,  = Projections.simplex_mod4(p0, q0, C)
+    p, q   = Projections.simplex_mod4(p0, q0, C)
 
     @testset "simplex mod4 projection:" begin
         @test err(L(p,p0,q,q0), L(pe,p0,qe,q0); atol = atol1)
@@ -79,7 +79,7 @@ function test_minimize_linear_on_simplex(p0, c, ε::Real, k::Real; atol1::Real =
     elseif k == 1
         p = Projections.minimize_linear_on_simplex_l1(p0, c, ε)
     elseif k == 2
-        p, = Projections.minimize_linear_on_simplex_l2(p0, c, ε)
+        p = Projections.minimize_linear_on_simplex_l2(p0, c, ε)
     else
         @error "k ∉ {1, 2, Inf}"
         return nothing

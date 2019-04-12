@@ -47,7 +47,7 @@ end
 
 
 function find_μ_mod2(μ, s, p0, q0, C1::Real, C2::Integer)
-    update_stats!()
+    add_eval!()
     λ = find_λ_mod2(μ, s, C2)
     return sum(min.(max.(p0 .- λ .+ sum(max.(q0 .+ λ .- μ, 0))/C2, 0), C1)) - C2*μ
 end
@@ -57,6 +57,7 @@ function simplex_mod2(p0::AbstractArray{<:Real},
                       q0::AbstractArray{<:Real},
                       C1::Real,
                       C2::Integer;
+                      returnstats::Bool = false,
                       kwargs...)
 
     if C2 >= length(q0)
@@ -84,5 +85,11 @@ function simplex_mod2(p0::AbstractArray{<:Real},
         p = @. max(min(p0 - λ + δ, C1), 0)
         q = @. max(min(q0 + λ, μ), 0)
     end
-    return p, q, return_stats()
+
+    if returnstats
+        add_stat!(:μ => μ, :λ => λ, :lb => lb, :ub => ub)
+        return p, q, return_stats(), return_evals()
+    else
+        return p, q
+    end
 end

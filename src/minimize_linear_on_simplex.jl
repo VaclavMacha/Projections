@@ -137,7 +137,7 @@ f_μ(μ, λ, p0, c, ε::Real) = sum((min.(c .+ λ, μ.*p0)).^2) - ε^2*μ^2
 
 
 function find_μ(μ, p0, c, ε::Real)
-    update_stats!()
+    add_eval!()
     λ = find_λ(μ, p0, c)
     return f_μ(μ, λ, p0, c, ε)
 end
@@ -152,7 +152,7 @@ end
 
 function Newton(μ0, p0, c, ε::Real; maxiter::Integer = 100, atol::Real = 1e-8, kwargs...)
     reset_stats!()
-    new_key!(:newton)
+    change_key!(:newton)
     μ, λ, f = μ0, 0, find_μ(μ0, p0, c, ε)
 
     while f >= 0
@@ -168,7 +168,7 @@ function Newton(μ0, p0, c, ε::Real; maxiter::Integer = 100, atol::Real = 1e-8,
     while abs(f) > atol
         μ -= f/∇f_μ(μ, λ, p0, c, ε)
 
-        update_stats!()
+        add_eval!()
         λ = find_λ(μ, p0, c)
         f = f_μ(μ, λ, p0, c, ε)
     end
@@ -179,6 +179,7 @@ end
 function minimize_linear_on_simplex_l2(p0::AbstractArray{<:Real},
                                        c::AbstractArray{<:Real},
                                        ε::Real;
+                                       returnstats::Bool = false,
                                        kwargs...)
 
     if !isapprox(sum(p0), 1, atol = 1e-8) || minimum(p0) < 0
@@ -217,5 +218,11 @@ function minimize_linear_on_simplex_l2(p0::AbstractArray{<:Real},
         λ = find_λ(μ, p0, c)
         p = @. max(p0 - (c + λ)/μ, 0)
     end
-    return p, return_stats()
+
+    if returnstats
+        add_stat!(:μ => μ, :λ => λ, :lb => lb, :ub => ub)
+        return p, return_stats(), return_evals()
+    else
+        return p
+    end
 end

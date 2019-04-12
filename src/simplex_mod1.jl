@@ -29,7 +29,7 @@ end
 
 
 function find_μ_mod1(μ, p0, q0, r0, C1::Real, C2::Real)
-    update_stats!()
+    add_eval!()
     λ = find_λ_mod1(μ, q0, r0, C2)
     return sum(min.(max.(p0 .- λ, 0), C1)) - sum(min.(max.(q0 .+ λ, 0), λ + μ))
 end
@@ -40,6 +40,7 @@ function simplex_mod1(p0::AbstractArray{<:Real},
                       r0::Real,
                       C1::Real,
                       C2::Real;
+                      returnstats::Bool = false,
                       kwargs...)
 
     if r0 <= - C2*sum(max.(q0 .+ maximum(p0), 0))
@@ -63,5 +64,11 @@ function simplex_mod1(p0::AbstractArray{<:Real},
         q = @. min(max(q0 + λ, 0), λ + μ)
         r = (λ + μ)/C2
     end
-    return p, q, r, return_stats()
+
+    if returnstats
+        add_stat!(:μ => μ, :λ => λ, :lb => lb, :ub => ub)
+        return p, q, r, return_stats(), return_evals()
+    else
+        return p, q, r
+    end
 end

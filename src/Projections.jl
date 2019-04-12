@@ -5,20 +5,31 @@ using Convex, ECOS,  Roots, LinearAlgebra, Statistics
 
 mutable struct Stats
     evals::Dict
+    stats::Dict
     key::Symbol
 end
 
-stats = Stats(Dict(), :key)
+stats = Stats(Dict{Symbol, Int64}(), Dict{Symbol, Any}(), :key)
 
-function new_key!(key::Symbol)
-    stats.evals[key] = 0
-    stats.key = key
+change_key!(key::Symbol) = stats.key = key
+
+function add_eval!()
+    if haskey(stats.evals, stats.key)
+        stats.evals[stats.key] += 1
+    else
+        stats.evals[stats.key]  = 1
+    end
+    return nothing
 end
-update_stats!() = stats.evals[stats.key] += 1
-return_stats()  = deepcopy(stats.evals)
+
+add_stat!(args::Pair...) = [stats[key] = val for (key, val) in args]
+
+return_evals() = deepcopy(stats.evals)
+return_stats() = deepcopy(stats.stats)
 
 function reset_stats!()
-    stats.evals = Dict()
+    stats.evals = Dict{Symbol, Int64}()
+    stats.stats = Dict{Symbol, Any}()
     stats.key   = :key
 end
 

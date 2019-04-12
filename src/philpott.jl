@@ -13,7 +13,14 @@ function philpott(p0::AbstractArray{<:Real},
 
     while Klen > 1
         c_bar = mean(c[K])
-        s     = sqrt(mean(c[K].^2) - c_bar^2)
+        s     = sqrt(mean(abs2, c[K] .- c_bar))
+
+        if s <= 1e-10
+            a1 = @views sum(p0[.~K])
+            @. p[K] = p0[K] + a1/Klen
+            @. p[~K] = 0
+            return p
+        end
 
         if Klen == m
             p = p0 .+ ε*(c .- c_bar)/(sqrt(m)*s)
@@ -54,9 +61,16 @@ function philpott_optimized(p0::AbstractArray{<:Real},
     j = 0
     a1, a2, a3 = 0, 0, sqrt(m)*ε
 
-    for M = m:-1:1
+    for M = m:-1:2
         c_bar = mean(c[K])
-        s     = sqrt(mean(abs2, c[K]) - c_bar^2)
+        s     = sqrt(mean(abs2, c[K] .- c_bar))
+
+        if s <= 1e-10
+            a1 += p0[j]
+            @. p[K] = p0[K] + a1/M
+            p[j] = 0
+            return p
+        end
 
         if M == m
             p = p0 .+ ε*(c .- c_bar)/(sqrt(m)*s)
@@ -79,6 +93,7 @@ function philpott_optimized(p0::AbstractArray{<:Real},
             K[j]   = false
         end
     end
+    p[j] = 0
     @. p[K] = 1
     return p
 end

@@ -42,30 +42,21 @@ function minimize_linear_on_simplex_lInf(p0::AbstractArray{<:Real},
         p[i] += δ1
 
         while δ2 < δ1
-
-            if p[j] >= δ1 - δ2
-                if δ1 - δ2 <= ε - δ_down
-                    p[j]   -= δ1 - δ2
-                    δ_down += δ1 - δ2
-                    break
-                else
-                    δ2    += ε - δ_down
-                    p[j]  -= ε - δ_down
-                    δ_down = 0
-                    j -= 1
-                end
+            if min(p[j], ε - δ_down) >= δ1 - δ2
+                p[j]   -= δ1 - δ2
+                δ_down += δ1 - δ2
+                break
             else
                 δ2     += min(p[j], ε - δ_down)
                 p[j]   -= min(p[j], ε - δ_down)
-                δ_down = 0
+                δ_down  = 0
                 j      -= 1
-            end
 
-            if i == j
-                p[i] += - δ1 + δ2
-                break
+                if i == j
+                    p[i] += - δ1 + δ2
+                    break
+                end
             end
-
         end
         i += 1
     end

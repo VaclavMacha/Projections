@@ -2,11 +2,22 @@ function philpott(p0::AbstractArray{<:Real},
                   c::AbstractArray{<:Real},
                   ε::Real)
 
-    m = length(p0)
+      m     = length(p0)
+      c     = - c
+      c_bar = mean(c)
+      s     = sqrt(mean(abs2, c .- c_bar))
+      if s <= 1e-10
+          return p0
+      end
+
+      if ε <= sqrt(m/(m-1))*minimum(p0)
+          p = p0 .+ ε*(c .- c_bar)/(sqrt(m)*s)
+          return p
+      end
+
     K = BitArray(ones(size(p0)))
     Klen = sum(K)
     p = zero(p0)
-    c = - c
     j = 0
     a1, a2, a3 = 0, 0, sqrt(m)*ε
 
@@ -54,10 +65,21 @@ function philpott_optimized(p0::AbstractArray{<:Real},
                             c::AbstractArray{<:Real},
                             ε::Real)
 
-    m = length(p0)
+    m     = length(p0)
+    c     = - c
+    c_bar = mean(c)
+    s     = sqrt(mean(abs2, c .- c_bar))
+    if s <= 1e-10
+        return p0
+    end
+
+    if ε <= sqrt(m/(m-1))*minimum(p0)
+        p = p0 .+ ε*(c .- c_bar)/(sqrt(m)*s)
+        return p
+    end
+
     K = BitArray(ones(size(p0)))
     p = zero(p0)
-    c = - c
     j = 0
     a1, a2, a3 = 0, 0, sqrt(m)*ε
 

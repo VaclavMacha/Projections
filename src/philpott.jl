@@ -1,121 +1,107 @@
 function philpott(p0::AbstractArray{<:Real},
                   c::AbstractArray{<:Real},
-                  ε::Real)
+                  ε::Real;
+                  atol::Real = 1e-10)
 
-      m     = length(p0)
-      c     = - c
-      c_bar = mean(c)
-      s     = sqrt(mean(abs2, c .- c_bar))
-      if s <= 1e-10
-          return p0
-      end
+    m      = length(p0)
+    c      = - c
+    p      = zero(p0)
+    c_mean = mean(c)
+    c_std  = sqrt(mean(abs2, c .- c_mean))
 
-      if ε <= sqrt(m/(m-1))*minimum(p0)
-          p = p0 .+ ε*(c .- c_bar)/(sqrt(m)*s)
-          return p
-      end
+    isapprox(c_std, 0, atol = atol) && return p0
 
-    K = BitArray(ones(size(p0)))
-    Klen = sum(K)
-    p = zero(p0)
-    j = 0
-    a1, a2, a3 = 0, 0, sqrt(m)*ε
+    I, I_len, j = BitArray(ones(size(p0))), m, 0
+    a1, a2, a3  = 0, 0, sqrt(m)*ε
 
+    while I_len > 1
+        c_mean = mean(c[I])
+        c_std  = sqrt(mean(abs2, c[I] .- c_mean))
 
-    while Klen > 1
-        c_bar = mean(c[K])
-        s     = sqrt(mean(abs2, c[K] .- c_bar))
-
-        if s <= 1e-10
-            a1 = @views sum(p0[.~K])
-            @. p[K] = p0[K] + a1/Klen
-            @. p[~K] = 0
+        if isapprox(c_std, 0, atol = atol)
+            a1       = @views sum(p0[.~I])
+            @. p[I]  = p0[I] + a1/I_len
+            @. p[~I] = 0
             return p
         end
 
-        if Klen == m
-            p = p0 .+ ε*(c .- c_bar)/(sqrt(m)*s)
-        else
-            a1 = @views sum(p0[.~K])
-            a2 = @views sum(p0[.~K].^2)
-            a3 = @views sqrt(Klen*(ε^2 - a2) - a1^2)
+        ## update p
+        if I_len == m
+            p = p0 .+ ε*(c .- c_mean)/(sqrt(m)*c_std)
 
-            @. p[K]  = p0[K] + (a1 + a3*(c[K] - c_bar)/s)/Klen
-            @. p[~K] = 0
+            ε <= sqrt(m/(m-1))*minimum(p0) && return p
+        else
+            a1 = @views sum(p0[.~I])
+            a2 = @views sum(p0[.~I].^2)
+            a3 = @views sqrt(I_len*(ε^2 - a2) - a1^2)
+
+            @. p[I]  = p0[I] + (a1 + a3*(c[I] - c_mean)/c_std)/I_len
+            @. p[~I] = 0
         end
 
+        ## find index j
         if minimum(p) >= 0
             return p
         else
-            K2 = K .* (p .< 0)
-            ε_new  = @. @views (a1^2 + (s*(Klen*p0[K2] + a1)/(c[K2] - c_bar))^2)/Klen + a2
-            val, j = findmin(ε_new)
-            K[findall(K2)[j]] = false
-        end
+            J   = I .* (p .< 0)
+            ε_p = @. (a1^2 + (c_std*(I_len*p0[J] + a1)/(c[J] - c_mean))^2)/I_len + a2
+            j   = findmin(ε_p)[2]
 
-        Klen = sum(K)
+            I[findall(J)[j]] = false
+            I_len = sum(I)
+        end
     end
-    @. p[K] = 1
-    @. p[~K] = 0
+    @. p[I] = 1
+    @. p[~I] = 0
     return p
 end
 
 
 function philpott_optimized(p0::AbstractArray{<:Real},
                             c::AbstractArray{<:Real},
-                            ε::Real)
+                            ε::Real;
+                            atol::Real = 1e-10,
+                            kwargs...)
 
-    m     = length(p0)
-    c     = - c
-    c_bar = mean(c)
-    s     = sqrt(mean(abs2, c .- c_bar))
-    if s <= 1e-10
-        return p0
-    end
+    c      = - c
+    m      = length(p0)
+    c_mean = mean(c)
+    c_std  = stdm(c, c_mean; corrected = false)
+    p      = p0 .+ ε*(c .- c_mean)/(sqrt(m)*c_std)
 
-    if ε <= sqrt(m/(m-1))*minimum(p0)
-        p = p0 .+ ε*(c .- c_bar)/(sqrt(m)*s)
-        return p
-    end
+    isapprox(c_std, 0, atol = atol) && return p0
+     ε <= sqrt(m/(m-1))*minimum(p0) && return p
 
-    K = BitArray(ones(size(p0)))
-    p = zero(p0)
-    j = 0
+    I, j       = collect(1:m), 0
     a1, a2, a3 = 0, 0, sqrt(m)*ε
 
-    for M = m:-1:2
-        c_bar = mean(c[K])
-        s     = sqrt(mean(abs2, c[K] .- c_bar))
+    @views for I_len = m-1:-1:1
 
-        if s <= 1e-10
-            a1 += p0[j]
-            @. p[K] = p0[K] + a1/M
-            p[j] = 0
+        minimum(p[I]) >= 0 && return p
+
+        ## find index j
+        J   = I[p[I] .< 0]
+        ε_p = @. (a1^2 + (c_std*(I_len*p0[J] + a1)/(c[J] - c_mean))^2)/I_len + a2
+
+        j = J[findmin(ε_p)[2]]
+        deleteat!(I, searchsortedfirst(I, j))
+        p[j] = 0
+
+        ## update p
+        a1 += p0[j]
+        a2 += p0[j]^2
+        a3 = sqrt(I_len*(ε^2 - a2) - a1^2)
+
+        c_mean = ((I_len + 1)*c_mean - c[j])/I_len
+        c_std  = stdm(c[I], c_mean; corrected = false)
+
+        @. p[I] = p0[I] + (a1 + a3*(c[I] - c_mean)/c_std)/I_len
+
+        if isapprox(c_std, 0, atol = atol)
+            @. p[I] = p0[I] + a1/I_len
             return p
-        end
-
-        if M == m
-            p = p0 .+ ε*(c .- c_bar)/(sqrt(m)*s)
-        else
-            a1 += p0[j]
-            a2 += p0[j]^2
-            a3 = sqrt(M*(ε^2 - a2) - a1^2)
-
-            @. p[K]  = p0[K] + (a1 + a3*(c[K] - c_bar)/s)/M
-            p[j] = 0
-        end
-
-        if minimum(p) >= 0
-            return p
-        else
-            K2     = @views p .< 0
-            ε_new  = @. (a1^2 + (s*(M*p0[K2] + a1)/(c[K2] - c_bar))^2)/M + a2
-            val, j = findmin(ε_new)
-            j      = findall(K2)[j]
-            K[j]   = false
         end
     end
-    p[j] = 0
-    @. p[K] = 1
+    p[I] = 1
     return p
 end

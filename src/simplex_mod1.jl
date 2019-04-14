@@ -43,18 +43,18 @@ function simplex_mod1(p0::AbstractArray{<:Real},
                       returnstats::Bool = false,
                       kwargs...)
 
+    λ   = 0
+    μ   = 1
+    lb1 = minimum(C2*r0 + C2^2*sum(q0) .- p0)/(C2^2*length(q0) + 1)
+    lb2 = minimum(q0)
+    lb  = min(lb1, lb2)
+    ub  = maximum(q0) + C2*max(r0, 0)
+
     if r0 <= - C2*sum(max.(q0 .+ maximum(p0), 0))
         p = zero(p0)
         q = zero(q0)
         r = zero(r0)
     else
-        λ   = 0
-        μ   = 1
-        lb1 = minimum(C2*r0 + C2^2*sum(q0) .- p0)/(C2^2*length(q0) + 1)
-        lb2 = minimum(q0)
-        lb  = min(lb1, lb2)
-        ub  = maximum(q0) + C2*max(r0, 0)
-
         g_μ(μ) = find_μ_mod1(μ, p0, q0, r0, C1, C2)
 
         μ = find_root(g_μ, μ, lb, ub; kwargs...)
@@ -65,10 +65,6 @@ function simplex_mod1(p0::AbstractArray{<:Real},
         r = (λ + μ)/C2
     end
 
-    if returnstats
-        add_stat!(:μ => μ, :λ => λ, :lb => lb, :ub => ub)
-        return p, q, r, return_stats(), return_evals()
-    else
-        return p, q, r
-    end
+    add_stat!(:μ => μ, :λ => λ, :lb => lb, :ub => ub)
+    return returnstats ? (p, q, r, return_stats(), return_evals()) : (p, q, r)
 end

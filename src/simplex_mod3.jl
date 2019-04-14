@@ -32,28 +32,25 @@ function simplex_mod3(p0::AbstractArray{<:Real},
                       returnstats::Bool = false,
                       kwargs...)
 
+    λ  = (maximum(p0) - maximum(q0))/2
+    lb = -maximum(q0)
+    ub = maximum(p0)
+
+
     if -maximum(q0) > maximum(p0)
         p = zero(p0)
         q = zero(q0)
         r = zero(r0)
     else
-        λ  = (maximum(p0) - maximum(q0))/2
-        lb = -maximum(q0)
-        ub = maximum(p0)
-
         g_λ(λ) = find_λ_mod3(λ, p0, q0)
 
         λ = find_root(g_λ, λ, lb, ub; kwargs...)
-
         p = @. max(p0 - λ, 0)
         q = @. max(q0 + λ, 0)
         r = max(r0, 1e-4)
     end
 
-    if returnstats
-        add_stat!(:λ => λ, :lb => lb, :ub => ub)
-        return p, q, r, return_stats(), return_evals()
-    else
-        return p, q, r
-    end
+
+    add_stat!(:λ => λ, :lb => lb, :ub => ub)
+    return returnstats ? (p, q, r, return_stats(), return_evals()) : (p, q, r)
 end

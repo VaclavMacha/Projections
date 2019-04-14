@@ -32,22 +32,26 @@ function simplex_mod4(p0::AbstractArray{<:Real},
                       returnstats::Bool = false,
                       kwargs...)
 
+    n  = length(p0)
+    λ  = 0
+    μ  = 10
+    lb = 1e-10
+    ub = n*(maximum(p0) + maximum(q0))/C
+
+
     if C >= length(q0)
         @error "No feasible solution: C < length(q0) needed."
-        return p0, q0
+
+        add_stat!(:μ => μ, :λ => λ, :lb => lb, :ub => ub)
+        return returnstats ? (p0, q0, return_stats(), return_evals()) : (p0, q0)
     end
+
 
     if mean(partialsort(q0, 1:C; rev = true)) + maximum(p0) <= 0
         p = zero(p0)
         q = zero(q0)
     else
-        s  = vcat(.- sort(q0; rev = true), Inf)
-        n  = length(p0)
-        λ  = 0
-        μ  = 10
-        lb = 1e-10
-        ub = n*(maximum(p0) + maximum(q0))/C
-
+        s      = vcat(.- sort(q0; rev = true), Inf)
         g_μ(μ) = find_μ_mod4(μ, s, p0, q0, C)
 
         μ = find_root(g_μ, μ, lb, ub; kwargs...)
@@ -58,10 +62,6 @@ function simplex_mod4(p0::AbstractArray{<:Real},
         q = @. max(min(q0 + λ, μ), 0)
     end
 
-    if returnstats
-        add_stat!(:μ => μ, :λ => λ, :δ => δ, :lb => lb, :ub => ub)
-        return p, q, return_stats(), return_evals()
-    else
-        return p, q
-    end
+    add_stat!(:μ => μ, :λ => λ, :lb => lb, :ub => ub)
+    return returnstats ? (p, q, return_stats(), return_evals()) : (p, q)
 end

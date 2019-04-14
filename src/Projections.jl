@@ -22,7 +22,7 @@ function add_eval!()
     return nothing
 end
 
-add_stat!(args::Pair...) = [stats[key] = val for (key, val) in args]
+add_stat!(args::Pair...) = [stats.stats[key] = val for (key, val) in args]
 
 return_evals() = deepcopy(stats.evals)
 return_stats() = deepcopy(stats.stats)

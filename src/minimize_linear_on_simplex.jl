@@ -182,18 +182,28 @@ function minimize_linear_on_simplex_l2(p0::AbstractArray{<:Real},
                                        returnstats::Bool = false,
                                        kwargs...)
 
-    if !isapprox(sum(p0), 1, atol = 1e-8) || minimum(p0) < 0
-        @error string("p0 is not a probability distribution: ∑p0 = ", sum(p0), ", min(p0) = ", minimum(p0))
-        return p0
-    end
-
-    if iszero(ε)
-        return p0
-    end
-
     c_min = minimum(c)
     i_min = c_min .== c
     p     = zero(p0)
+
+    λ     = 0
+    μ     = 100
+    lb    = 1e-6
+    ub    = 1e10
+    add_stat!(:μ => μ, :λ => λ, :lb => lb, :ub => ub)
+
+
+    if !isapprox(sum(p0), 1, atol = 1e-8) || minimum(p0) < 0
+        @error string("p0 is not a probability distribution: ∑p0 = ", sum(p0), ", min(p0) = ", minimum(p0))
+
+        return returnstats ? (p0, return_stats(), return_evals()) : p0
+    end
+
+
+    if iszero(ε)
+        return returnstats ? (p0, return_stats(), return_evals()) : p0
+    end
+
 
     if sum(i_min) == 1
         p[i_min] .= 1
@@ -201,12 +211,8 @@ function minimize_linear_on_simplex_l2(p0::AbstractArray{<:Real},
         p[i_min] .= simplex(p0[i_min])
     end
 
-    if norm(p - p0) > ε
-        λ  = 0
-        μ  = 100
-        lb = 1e-6
-        ub = 1e10
 
+    if norm(p - p0) > ε
         g_μ(μ) = find_μ(μ, p0, c, ε)
 
         if :method in keys(kwargs) && kwargs[:method] == :newton
@@ -219,10 +225,7 @@ function minimize_linear_on_simplex_l2(p0::AbstractArray{<:Real},
         p = @. max(p0 - (c + λ)/μ, 0)
     end
 
-    if returnstats
-        add_stat!(:μ => μ, :λ => λ, :lb => lb, :ub => ub)
-        return p, return_stats(), return_evals()
-    else
-        return p
-    end
+
+    add_stat!(:μ => μ, :λ => λ, :lb => lb, :ub => ub)
+    return returnstats ? (p, return_stats(), return_evals()) : p
 end

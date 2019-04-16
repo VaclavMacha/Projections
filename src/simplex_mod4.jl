@@ -32,6 +32,7 @@ function simplex_mod4(p0::AbstractArray{<:Real},
                       returnstats::Bool = false,
                       kwargs...)
 
+    reset_stats!()
     n  = length(p0)
     λ  = 0
     μ  = 10

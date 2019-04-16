@@ -60,12 +60,12 @@ function simplex_mod2(p0::AbstractArray{<:Real},
                       returnstats::Bool = false,
                       kwargs...)
 
+    reset_stats!()
     n  = length(p0)
     λ  = 0
     μ  = n*C1/(2*C2)/100
     lb = 1e-10
     ub = n*C1/C2 + 1e-6
-
 
     if C2 >= length(q0)
         @error "No feasible solution: C2 < length(q0) needed."

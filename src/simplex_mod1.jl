@@ -43,6 +43,7 @@ function simplex_mod1(p0::AbstractArray{<:Real},
                       returnstats::Bool = false,
                       kwargs...)
 
+    reset_stats!()
     λ   = 0
     μ   = 1
     lb1 = minimum(C2*r0 + C2^2*sum(q0) .- p0)/(C2^2*length(q0) + 1)

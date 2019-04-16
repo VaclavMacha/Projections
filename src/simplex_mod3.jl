@@ -32,6 +32,7 @@ function simplex_mod3(p0::AbstractArray{<:Real},
                       returnstats::Bool = false,
                       kwargs...)
 
+    reset_stats!()
     λ  = (maximum(p0) - maximum(q0))/2
     lb = -maximum(q0)
     ub = maximum(p0)

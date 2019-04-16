@@ -112,39 +112,37 @@ end
 ## l2 norm
 function find_λ(μ, p0::AbstractArray{<:Real}, c::AbstractArray{<:Real})
     n = length(p0)
-    s = sort(μ*p0 - c)
-    g = n*s[1] + sum(c)
-    g_old = 0
+    s = sort(μ.*p0 .- c)
+    g = μ
     λ = 0
+    g_old = g
+
+    for i in n-1:-1:1
+        g_old = g
+        g    -= (n - i)*(s[i + 1] - s[i])
+        if g <= 0
+            λ = s[i] - (s[i + 1] - s[i])/(g_old - g)*g
+            break
+        end
+    end
 
     if g > 0
         λ = - mean(c)
-    else
-        for i in 1:n-1
-            g_old = g
-            g += (n - i)*(s[i + 1] - s[i])
-            if g >= 0
-                λ = s[i] - (s[i + 1] - s[i])/(g - g_old)*g_old
-                break
-            end
-        end
     end
     return λ
 end
 
 
-f_μ(μ, λ, p0, c, ε::Real) = sum((min.(c .+ λ, μ.*p0)).^2) - ε^2*μ^2
-
-
-function find_μ(μ, p0, c, ε::Real)
+function find_μ(μ, p0, c, ε::Real; return_λ::Bool = false)
     add_eval!()
     λ = find_λ(μ, p0, c)
-    return f_μ(μ, λ, p0, c, ε)
+    f = sum((min.(c .+ λ, μ.*p0)).^2) - ε^2*μ^2
+    return return_λ ? (λ, f) : f
 end
 
 
 function ∇f_μ(μ, λ, p0, c, ε::Real)
-    pi = @views @. p0[c + λ >= μ*p0]
+    pi = @views @. p0[c + λ > μ*p0]
 
     return 2*μ*(sum(pi)^2/(length(p0) - length(pi)) + sum(abs2, pi) - ε^2)
 end
@@ -156,21 +154,15 @@ function Newton(μ0, p0, c, ε::Real; maxiter::Integer = 100, atol::Real = 1e-8,
     μ, λ, f = μ0, 0, find_μ(μ0, p0, c, ε)
 
     while f >= 0
-        if f == 0
-            return μ
-        else
-            μ *= 10
-        end
-        λ = find_λ(μ, p0, c)
-        f = f_μ(μ, λ, p0, c, ε)
+        f == 0 && return μ
+
+        μ   *= 10
+        λ, f = find_μ(μ, p0, c, ε; return_λ = true)
     end
 
     while abs(f) > atol
-        μ -= f/∇f_μ(μ, λ, p0, c, ε)
-
-        add_eval!()
-        λ = find_λ(μ, p0, c)
-        f = f_μ(μ, λ, p0, c, ε)
+        μ   -= f/∇f_μ(μ, λ, p0, c, ε)
+        λ, f = find_μ(μ, p0, c, ε; return_λ = true)
     end
     return μ
 end
@@ -182,6 +174,7 @@ function minimize_linear_on_simplex_l2(p0::AbstractArray{<:Real},
                                        returnstats::Bool = false,
                                        kwargs...)
 
+    reset_stats!()
     c_min = minimum(c)
     i_min = c_min .== c
     p     = zero(p0)
@@ -212,7 +205,7 @@ function minimize_linear_on_simplex_l2(p0::AbstractArray{<:Real},
     end
 
 
-    if norm(p - p0) > ε
+    if norm(p - p0, 2) > ε
         g_μ(μ) = find_μ(μ, p0, c, ε)
 
         if :method in keys(kwargs) && kwargs[:method] == :newton

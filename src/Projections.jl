@@ -1,6 +1,6 @@
 module Projections
 
-using Convex, ECOS,  Roots, LinearAlgebra, Statistics
+using Convex, ECOS,  Roots, LinearAlgebra, Statistics, Distributions
 
 
 mutable struct Stats

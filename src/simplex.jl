@@ -1,4 +1,4 @@
-function simplex_exact(p0::AbstractArray{<:Real}; verbose::Bool = false)
+function solve_simplex_exact(p0::AbstractArray{<:Real}; verbose::Bool = false)
     p = Convex.Variable(length(p0))
 
     objective   = sumsquares(p - p0)/2
@@ -11,7 +11,7 @@ function simplex_exact(p0::AbstractArray{<:Real}; verbose::Bool = false)
     return p.value
 end
 
-function simplex(p0::AbstractArray{<:Real})
+function solve_simplex(p0::AbstractArray{<:Real})
     μ = 0
     p = sort(p0)
     n = length(p)

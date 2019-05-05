@@ -1,7 +1,7 @@
-function simplex_mod4_exact(p0::AbstractArray{<:Real},
-                            q0::AbstractArray{<:Real},
-                            C::Integer;
-                            verbose::Bool = false)
+function solve_AATP4_exact(p0::AbstractArray{<:Real},
+                           q0::AbstractArray{<:Real},
+                           C::Integer;
+                           verbose::Bool = false)
 
     p = Convex.Variable(length(p0))
     q = Convex.Variable(length(q0))
@@ -19,18 +19,18 @@ function simplex_mod4_exact(p0::AbstractArray{<:Real},
 end
 
 
-function find_μ_mod4(μ, s, p0, q0, C::Integer)
+function find_μ_AATP4(μ, s, p0, q0, C::Integer)
     add_eval!()
-    λ = find_λ_mod2(μ, s, C)
+    λ = find_λ_AATP2(μ, s, C)
     return sum(max.(p0 .- λ .+ sum(max.(q0 .+ λ .- μ, 0))/C, 0)) - C*μ
 end
 
 
-function simplex_mod4(p0::AbstractArray{<:Real},
-                      q0::AbstractArray{<:Real},
-                      C::Integer;
-                      returnstats::Bool = false,
-                      kwargs...)
+function solve_AATP4(p0::AbstractArray{<:Real},
+                     q0::AbstractArray{<:Real},
+                     C::Integer;
+                     returnstats::Bool = false,
+                     kwargs...)
 
     reset_stats!()
     n  = length(p0)
@@ -53,10 +53,10 @@ function simplex_mod4(p0::AbstractArray{<:Real},
         q = zero(q0)
     else
         s      = vcat(.- sort(q0; rev = true), Inf)
-        g_μ(μ) = find_μ_mod4(μ, s, p0, q0, C)
+        g_μ(μ) = find_μ_AATP4(μ, s, p0, q0, C)
 
         μ = find_root(g_μ, μ, lb, ub; kwargs...)
-        λ = find_λ_mod2(μ, s, C)
+        λ = find_λ_AATP2(μ, s, C)
 
         δ = sum(max.(q0 .+ λ .- μ, 0))/C
         p = @. max(p0 - λ + δ, 0)

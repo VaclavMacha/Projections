@@ -1,8 +1,8 @@
-function minimize_linear_on_simplex_exact(p0::AbstractArray{<:Real},
-                                          c::AbstractArray{<:Real},
-                                          ε::Real,
-                                          k::Real;
-                                          verbose::Bool = false)
+function solve_DRO_exact(p0::AbstractArray{<:Real},
+                         c::AbstractArray{<:Real},
+                         ε::Real,
+                         k::Real;
+                         verbose::Bool = false)
 
     p = Convex.Variable(length(p0))
 
@@ -19,9 +19,9 @@ end
 
 ## --------------------------------------------------------------------------------------------------------
 ## lInf norm
-function minimize_linear_on_simplex_lInf(p0::AbstractArray{<:Real},
-                                         c::AbstractArray{<:Real},
-                                         ε::Real)
+function solve_DRO_lInf(p0::AbstractArray{<:Real},
+                        c::AbstractArray{<:Real},
+                        ε::Real)
 
     if !isapprox(sum(p0), 1, atol = 1e-8) || minimum(p0) < 0
         @error string("p0 is not a probability distribution: ∑p0 = ", sum(p0), ", min(p0) = ", minimum(p0))
@@ -66,9 +66,9 @@ end
 
 ## --------------------------------------------------------------------------------------------------------
 ## l1 norm
-function minimize_linear_on_simplex_l1(p0::AbstractArray{<:Real},
-                                       c::AbstractArray{<:Real},
-                                       ε::Real)
+function solve_DRO_l1(p0::AbstractArray{<:Real},
+                      c::AbstractArray{<:Real},
+                      ε::Real)
 
     if !isapprox(sum(p0), 1, atol = 1e-8) || minimum(p0) < 0
         @error string("p0 is not a probability distribution: ∑p0 = ", sum(p0), ", min(p0) = ", minimum(p0))
@@ -110,7 +110,7 @@ end
 
 ## --------------------------------------------------------------------------------------------------------
 ## l2 norm
-function find_λ(μ, p0::AbstractArray{<:Real}, c::AbstractArray{<:Real})
+function find_λ_DRO(μ, p0::AbstractArray{<:Real}, c::AbstractArray{<:Real})
     n = length(p0)
     s = sort(μ.*p0 .- c)
     g = μ
@@ -133,15 +133,15 @@ function find_λ(μ, p0::AbstractArray{<:Real}, c::AbstractArray{<:Real})
 end
 
 
-function find_μ(μ, p0, c, ε::Real; return_λ::Bool = false)
+function find_μ_DRO(μ, p0, c, ε::Real; return_λ::Bool = false)
     add_eval!()
-    λ = find_λ(μ, p0, c)
+    λ = find_λ_DRO(μ, p0, c)
     f = sum((min.(c .+ λ, μ.*p0)).^2) - ε^2*μ^2
     return return_λ ? (λ, f) : f
 end
 
 
-function ∇f_μ(μ, λ, p0, c, ε::Real)
+function find_∇μ_DRO(μ, λ, p0, c, ε::Real)
     pi = @views @. p0[c + λ > μ*p0]
 
     return 2*μ*(sum(pi)^2/(length(p0) - length(pi)) + sum(abs2, pi) - ε^2)
@@ -151,28 +151,28 @@ end
 function Newton(μ0, p0, c, ε::Real; maxiter::Integer = 100, atol::Real = 1e-8, kwargs...)
     reset_stats!()
     change_key!(:newton)
-    μ, λ, f = μ0, 0, find_μ(μ0, p0, c, ε)
+    μ, λ, f = μ0, 0, find_μ_DRO(μ0, p0, c, ε)
 
     while f >= 0
         f == 0 && return μ
 
         μ   *= 10
-        λ, f = find_μ(μ, p0, c, ε; return_λ = true)
+        λ, f = find_μ_DRO(μ, p0, c, ε; return_λ = true)
     end
 
     while abs(f) > atol
-        μ   -= f/∇f_μ(μ, λ, p0, c, ε)
-        λ, f = find_μ(μ, p0, c, ε; return_λ = true)
+        μ   -= f/find_∇μ_DRO(μ, λ, p0, c, ε)
+        λ, f = find_μ_DRO(μ, p0, c, ε; return_λ = true)
     end
     return μ
 end
 
 
-function minimize_linear_on_simplex_l2(p0::AbstractArray{<:Real},
-                                       c::AbstractArray{<:Real},
-                                       ε::Real;
-                                       returnstats::Bool = false,
-                                       kwargs...)
+function solve_DRO_l2(p0::AbstractArray{<:Real},
+                      c::AbstractArray{<:Real},
+                      ε::Real;
+                      returnstats::Bool = false,
+                      kwargs...)
 
     reset_stats!()
     c_min = minimum(c)
@@ -201,12 +201,12 @@ function minimize_linear_on_simplex_l2(p0::AbstractArray{<:Real},
     if sum(i_min) == 1
         p[i_min] .= 1
     else
-        p[i_min] .= simplex(p0[i_min])
+        p[i_min] .= solve_simplex(p0[i_min])
     end
 
 
     if norm(p - p0, 2) > ε
-        g_μ(μ) = find_μ(μ, p0, c, ε)
+        g_μ(μ) = find_μ_DRO(μ, p0, c, ε)
 
         if :method in keys(kwargs) && kwargs[:method] == :newton
             μ = Newton(μ, p0, c, ε; kwargs...)
@@ -214,10 +214,9 @@ function minimize_linear_on_simplex_l2(p0::AbstractArray{<:Real},
             μ = find_root(g_μ, μ, lb, ub; kwargs...)
         end
 
-        λ = find_λ(μ, p0, c)
+        λ = find_λ_DRO(μ, p0, c)
         p = @. max(p0 - (c + λ)/μ, 0)
     end
-
 
     add_stat!(:μ => μ, :λ => λ, :lb => lb, :ub => ub)
     return returnstats ? (p, return_stats(), return_evals()) : p

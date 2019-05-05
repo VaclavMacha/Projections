@@ -50,16 +50,3 @@ function find_root_bisection(f, x0, xlb, xub; atol::Real = 1e-8, verbose::Bool =
         return x
     end
 end
-
-# function find_root_falseposition(f, x0, xlb, xub; atol::Real = 1e-8, verbose::Bool = false)
-#     change_key!(:falseposition)
-#     x = Roots.find_zero(f, (xlb, xub), FalsePosition(); atol = atol)
-#
-#     if isnan(x)
-#         verbose && @warn "FalsePosition method failed"
-#         error("FalsePosition method failed")
-#         return NaN
-#     else
-#         return x
-#     end
-# end

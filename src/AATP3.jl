@@ -1,7 +1,7 @@
-function simplex_mod3_exact(p0::AbstractArray{<:Real},
-                            q0::AbstractArray{<:Real},
-                            r0::Real;
-                            verbose::Bool = false)
+function solve_AATP3_exact(p0::AbstractArray{<:Real},
+                           q0::AbstractArray{<:Real},
+                           r0::Real;
+                           verbose::Bool = false)
 
     p = Convex.Variable(length(p0))
     q = Convex.Variable(length(q0))
@@ -20,17 +20,17 @@ function simplex_mod3_exact(p0::AbstractArray{<:Real},
 end
 
 
-function find_λ_mod3(λ::Real, p0, q0)
+function find_λ_AATP3(λ::Real, p0, q0)
     add_eval!()
     sum(max.(p0 .- λ, 0)) - sum(max.(q0 .+ λ, 0))
 end
 
 
-function simplex_mod3(p0::AbstractArray{<:Real},
-                      q0::AbstractArray{<:Real},
-                      r0::Real;
-                      returnstats::Bool = false,
-                      kwargs...)
+function solve_AATP3(p0::AbstractArray{<:Real},
+                     q0::AbstractArray{<:Real},
+                     r0::Real;
+                     returnstats::Bool = false,
+                     kwargs...)
 
     reset_stats!()
     λ  = (maximum(p0) - maximum(q0))/2
@@ -43,7 +43,7 @@ function simplex_mod3(p0::AbstractArray{<:Real},
         q = zero(q0)
         r = zero(r0)
     else
-        g_λ(λ) = find_λ_mod3(λ, p0, q0)
+        g_λ(λ) = find_λ_AATP3(λ, p0, q0)
 
         λ = find_root(g_λ, λ, lb, ub; kwargs...)
         p = @. max(p0 - λ, 0)

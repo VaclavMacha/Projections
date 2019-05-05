@@ -1,9 +1,9 @@
-function simplex_mod1_exact(p0::AbstractArray{<:Real},
-                            q0::AbstractArray{<:Real},
-                            r0::Real,
-                            C1::Real,
-                            C2::Real;
-                            verbose::Bool = false)
+function solve_AATP1_exact(p0::AbstractArray{<:Real},
+                           q0::AbstractArray{<:Real},
+                           r0::Real,
+                           C1::Real,
+                           C2::Real;
+                           verbose::Bool = false)
 
     p = Convex.Variable(length(p0))
     q = Convex.Variable(length(q0))
@@ -23,25 +23,25 @@ function simplex_mod1_exact(p0::AbstractArray{<:Real},
 end
 
 
-function find_λ_mod1(μ, q0, r0::Real, C2::Real)
+function find_λ_AATP1(μ, q0, r0::Real, C2::Real)
     return C2*r0 + C2^2*sum(max.(q0 .- μ, 0)) - μ
 end
 
 
-function find_μ_mod1(μ, p0, q0, r0, C1::Real, C2::Real)
+function find_μ_AATP1(μ, p0, q0, r0, C1::Real, C2::Real)
     add_eval!()
-    λ = find_λ_mod1(μ, q0, r0, C2)
+    λ = find_λ_AATP1(μ, q0, r0, C2)
     return sum(min.(max.(p0 .- λ, 0), C1)) - sum(min.(max.(q0 .+ λ, 0), λ + μ))
 end
 
 
-function simplex_mod1(p0::AbstractArray{<:Real},
-                      q0::AbstractArray{<:Real},
-                      r0::Real,
-                      C1::Real,
-                      C2::Real;
-                      returnstats::Bool = false,
-                      kwargs...)
+function solve_AATP1(p0::AbstractArray{<:Real},
+                     q0::AbstractArray{<:Real},
+                     r0::Real,
+                     C1::Real,
+                     C2::Real;
+                     returnstats::Bool = false,
+                     kwargs...)
 
     reset_stats!()
     λ   = 0
@@ -56,10 +56,10 @@ function simplex_mod1(p0::AbstractArray{<:Real},
         q = zero(q0)
         r = zero(r0)
     else
-        g_μ(μ) = find_μ_mod1(μ, p0, q0, r0, C1, C2)
+        g_μ(μ) = find_μ_AATP1(μ, p0, q0, r0, C1, C2)
 
         μ = find_root(g_μ, μ, lb, ub; kwargs...)
-        λ = find_λ_mod1(μ, q0, r0, C2)
+        λ = find_λ_AATP1(μ, q0, r0, C2)
 
         p = @. min(max(p0 - λ, 0), C1)
         q = @. min(max(q0 + λ, 0), λ + μ)

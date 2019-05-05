@@ -36,11 +36,11 @@ end
 include("find_root.jl")
 
 include("simplex.jl")
-include("simplex_mod1.jl")
-include("simplex_mod2.jl")
-include("simplex_mod3.jl")
-include("simplex_mod4.jl")
-include("minimize_linear_on_simplex.jl")
+include("AATP1.jl")
+include("AATP2.jl")
+include("AATP3.jl")
+include("AATP4.jl")
+include("DRO.jl")
 include("philpott.jl")
 
 end # module

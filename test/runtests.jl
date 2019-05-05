@@ -12,12 +12,12 @@ include("tests.jl")
     @testset "simplex" begin
         @testset "p0 = $dp0, n = $n" for (dp0, n) in allcombinations
             p0  = rand(dp0(0,1), n)
-            test_projection_simplex(p0)
+            test_simplex(p0)
         end
     end;
 
 
-    ## simplex mod 1
+    ## AATP1
     Dp0 = [Uniform, Normal]
     Dq0 = [Uniform, Normal]
     r0s = vcat(-100, -10, 0:0.1:1, 10, 100)
@@ -28,16 +28,16 @@ include("tests.jl")
 
     allcombinations = Iterators.product(Dp0, Dq0, r0s, ns, ms, C1s, C2s)
 
-    @testset "simplex mod 1" begin
+    @testset "AATP1" begin
         @testset "p0 = $dp0, q0 = $dq0, r0 = $r0, n = $n, m = $m, C1 = $C1, C2 = $C2" for (dp0, dq0, r0, n, m, C1, C2) in allcombinations
             p0  = rand(dp0(0,1), n)
             q0  = rand(dp0(0,1), m)
-            test_projection_simplex_mod1(p0, q0, r0, C1, C2)
+            test_AATP1(p0, q0, r0, C1, C2)
         end
     end;
 
 
-    ## simplex mod 2
+    ## AATP2
     Dp0 = [Uniform, Normal]
     Dq0 = [Uniform, Normal]
     ns  = [10, 100]
@@ -47,17 +47,17 @@ include("tests.jl")
 
     allcombinations = Iterators.product(Dp0, Dq0, ns, ms, C1s, C2s)
 
-    @testset "simplex mod 2" begin
+    @testset "AATP2" begin
         @testset "p0 = $dp0, q0 = $dq0, n = $n, m = $m, C1 = $C1, C2 = $C2" for (dp0, dq0, n, m, C1, C2) in allcombinations
             p0  = rand(dp0(0,1), n)
             q0  = rand(dp0(0,1), m)
 
-            C2 < m && test_projection_simplex_mod2(p0, q0, C1, C2)
+            C2 < m && test_AATP2(p0, q0, C1, C2)
         end
     end;
 
 
-    ## simplex mod 3
+    ## AATP3
     Dp0 = [Uniform, Normal]
     Dq0 = [Uniform, Normal]
     r0s = vcat(-100, -10, 0:0.1:1, 10, 100)
@@ -66,16 +66,16 @@ include("tests.jl")
 
     allcombinations = Iterators.product(Dp0, Dq0, r0s, ns, ms)
 
-    @testset "simplex mod 3" begin
+    @testset "AATP3" begin
         @testset "p0 = $dp0, q0 = $dq0, r0 = $r0, n = $n, m = $m" for (dp0, dq0, r0, n, m) in allcombinations
             p0  = rand(dp0(0,1), n)
             q0  = rand(dp0(0,1), m)
-            test_projection_simplex_mod3(p0, q0, r0)
+            test_AATP3(p0, q0, r0)
         end
     end;
 
 
-    ## simplex mod 4
+    ## AATP4
     Dp0 = [Uniform, Normal]
     Dq0 = [Uniform, Normal]
     ns  = [10, 100]
@@ -84,17 +84,17 @@ include("tests.jl")
 
     allcombinations = Iterators.product(Dp0, Dq0, ns, ms, Cs)
 
-    @testset "simplex mod 4" begin
+    @testset "AATP4" begin
         @testset "p0 = $dp0, q0 = $dq0, n = $n, m = $m, C = $C" for (dp0, dq0, n, m, C) in allcombinations
             p0  = rand(dp0(0,1), n)
             q0  = rand(dp0(0,1), m)
 
-            C < m && test_projection_simplex_mod4(p0, q0, C)
+            C < m && test_AATP4(p0, q0, C)
         end
     end;
 
 
-    ## minimize on linear simplex l1, l2 and lInf
+    ## DRO l1, l2 and lInf
     Dc  = [Uniform, Normal]
     Dp0 = [Uniform]
     εs  = vcat(1e-6:0.01:0.1, 0.2, 0.5, 1)
@@ -103,15 +103,15 @@ include("tests.jl")
     allcombinations1 = Iterators.product(Dc, Dp0, εs)
     allcombinations2 = Iterators.product(Dp0, εs)
 
-    @testset "minimize on linear simplex: l1, l2, lInf norm" begin
+    @testset "DRO: l1, l2, lInf norm" begin
         @testset "p0 = $dp0, c = $dc, ε = $ε" for (dc, dp0, ε) in allcombinations1
             c   = rand(dc(0,1), n)
             p0  = rand(dp0(0,1), n)
             p0 /= sum(p0)
 
-            test_minimize_linear_on_simplex(p0, c, ε, Inf)
-            test_minimize_linear_on_simplex(p0, c, ε, 1)
-            test_minimize_linear_on_simplex(p0, c, ε, 2)
+            test_DRO(p0, c, ε, Inf)
+            test_DRO(p0, c, ε, 1)
+            test_DRO(p0, c, ε, 2)
             test_philpott(p0, c, ε, :original)
             test_philpott(p0, c, ε, :optimized)
 
@@ -119,9 +119,9 @@ include("tests.jl")
             sort!(p0; rev = true)
 
             @testset "sorted c, p0" begin
-                test_minimize_linear_on_simplex(p0, c, ε, Inf)
-                test_minimize_linear_on_simplex(p0, c, ε, 1)
-                test_minimize_linear_on_simplex(p0, c, ε, 2)
+                test_DRO(p0, c, ε, Inf)
+                test_DRO(p0, c, ε, 1)
+                test_DRO(p0, c, ε, 2)
                 test_philpott(p0, c, ε, :original)
                 test_philpott(p0, c, ε, :optimized)
             end
@@ -132,9 +132,9 @@ include("tests.jl")
             p0  = rand(dp0(0,1), n)
             p0 /= sum(p0)
 
-            test_minimize_linear_on_simplex(p0, c, ε, Inf)
-            test_minimize_linear_on_simplex(p0, c, ε, 1)
-            test_minimize_linear_on_simplex(p0, c, ε, 2)
+            test_DRO(p0, c, ε, Inf)
+            test_DRO(p0, c, ε, 1)
+            test_DRO(p0, c, ε, 2)
             test_philpott(p0, c, ε, :original)
             test_philpott(p0, c, ε, :optimized)
         end

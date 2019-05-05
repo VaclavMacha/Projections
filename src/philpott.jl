@@ -1,7 +1,7 @@
-function philpott(p0::AbstractArray{<:Real},
-                  c::AbstractArray{<:Real},
-                  ε::Real;
-                  atol::Real = 1e-10)
+function solve_philpott(p0::AbstractArray{<:Real},
+                        c::AbstractArray{<:Real},
+                        ε::Real;
+                        atol::Real = 1e-10)
 
     m      = length(p0)
     c      = - c
@@ -57,11 +57,11 @@ function philpott(p0::AbstractArray{<:Real},
 end
 
 
-function philpott_optimized(p0::AbstractArray{<:Real},
-                            c::AbstractArray{<:Real},
-                            ε::Real;
-                            atol::Real = 1e-10,
-                            kwargs...)
+function solve_philpott_optimized(p0::AbstractArray{<:Real},
+                                  c::AbstractArray{<:Real},
+                                  ε::Real;
+                                  atol::Real = 1e-10,
+                                  kwargs...)
 
     c      = - c
     m      = length(p0)

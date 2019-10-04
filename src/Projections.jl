@@ -36,10 +36,6 @@ end
 include("find_root.jl")
 
 include("simplex.jl")
-include("AATP1.jl")
-include("AATP2.jl")
-include("AATP3.jl")
-include("AATP4.jl")
 include("DRO.jl")
 include("philpott.jl")
 

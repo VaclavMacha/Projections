@@ -19,22 +19,35 @@ function test_generate(; atol = 1e-4)
 end
 
 
+function test_feasibility(d::Projections.Divergence, m::Projections.Model, p; atol = 1e-4)
+    ϕ = Projections.generate(d)
+    Test.@testset "Feasibility" begin
+        Test.@test isapprox(sum(p), 1; atol = atol)
+        Test.@test sum(m.q .* ϕ.(p ./ m.q)) <= 1.01 * m.ε
+        Test.@test minimum(p) >= - atol
+    end
+    return
+end
+
+
+function isfeasible(d::Projections.Divergence, m::Projections.Model, p; atol = 1e-4)
+    ϕ = Projections.generate(d)
+    return all([isapprox(sum(p), 1; atol = atol),
+                sum(m.q.*ϕ.(p./m.q)) <= 1.01 * m.ε,
+                minimum(p) >= - atol])
+end
+
+
 function test_model(m::Projections.Model; atol = 1e-4)
     Test.@testset "Comparison with the general solver" begin
         Test.@testset "$(Projections.name(d))" for d in divergences()
-            ϕ  = Projections.generate(d)
+            
             p1 = Projections.solve(d,m);
             p2 = Projections.solve_exact(d,m);
 
-            Test.@testset "Feasibility" begin
-                Test.@test isapprox(sum(p1), 1; atol = atol)
-                Test.@test sum(m.q.*ϕ.(p1./m.q)) <= 1.01 * m.ε
-                Test.@test minimum(p1) >= - atol
-            end
-            cond = [isapprox(sum(p2), 1; atol = atol),
-                    sum(m.q.*ϕ.(p2./m.q)) <= 1.01 * m.ε,
-                    minimum(p2) >= - atol]
-            if all(cond)
+            test_feasibility(d, m, p1)
+
+            if isfeasible(d, m, p2; atol = 1e-4)
                 Test.@testset "Optimality" begin
                     Test.@test m.c'*p1 >= m.c'*p2 - atol
                 end

@@ -38,8 +38,6 @@ end
 Solves the given model `m` with ϕ-divergence `d` using our new approach. 
 """
 function solve(d::Divergence, m::Model)
-  if check_ε(d, m)
-    
     p = zero(m.q)
     p[m.Imax] .= m.q[m.Imax]
     p ./= sum(m.q[m.Imax])
@@ -54,10 +52,6 @@ function solve(d::Divergence, m::Model)
       μ = Roots.bisection(h, bounds...)
       return optimal(d, m, μ)
     end
-  else
-    @info "wrong ε"
-    return m.q
-  end
 end
 
 

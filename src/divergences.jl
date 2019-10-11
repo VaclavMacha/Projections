@@ -48,9 +48,8 @@ function solve(d::Divergence, m::Model)
       @info "plati veta"
       return p
     else
-      h, bounds = find_mu(d,m)
-      μ = Roots.bisection(h, bounds...)
-      return optimal(d, m, μ)
+      λ = Roots.bisection(λ -> h(d, m, λ), bounds(d,m)...)
+      return optimal(d, m, λ)
     end
 end
 
@@ -92,22 +91,18 @@ and `false` otherwise.
 check_ε(d::KullbackLeibler, m::Model) = m.ε < -log(sum(m.q[m.Imax]))
 
 
-function find_mu(d::KullbackLeibler, m::Model)
-  μmin = 0
-  μmax = (m.cmax - m.cmin)/m.ε
+bounds(d::KullbackLeibler, m::Model) = (0, (m.cmax - m.cmin)/m.ε)
 
-  function h(μ)
-    p_hat = m.q.*exp.(m.c./μ)
-    val   = p_hat' * (m.c./μ .- log(sum(p_hat)) .- m.ε)
-    return isnan(val) || val == -typemax(val) ? typemax(val) : val
-  end
 
-  return h, (μmin, μmax)
+function h(d::KullbackLeibler, m::Model, λ)
+  p_hat = m.q.*exp.(m.c./λ)
+  val   = p_hat' * (m.c./λ .- log(sum(p_hat)) .- m.ε)
+  return isnan(val) || val == -typemax(val) ? typemax(val) : val
 end
 
 
-function optimal(d::KullbackLeibler, m::Model, μ::Real) 
-  p = m.q.*exp.(m.c./μ)
+function optimal(d::KullbackLeibler, m::Model, λ::Real) 
+  p = m.q.*exp.(m.c./λ)
   return p./sum(p)
 end
 
@@ -148,21 +143,17 @@ and `false` otherwise.
 check_ε(d::Burg, m::Model) = true
 
 
-function find_mu(d::Burg, m::Model)
-  μmin = m.cmax
-  μmax = m.cmax + (m.cmax - m.cmin)/m.ε
+bounds(d::Burg, m::Model) = (m.cmax, m.cmax + (m.cmax - m.cmin)/m.ε)
 
-  function h(μ)
-    val = sum(m.q.*log.(μ .- m.c)) + log(sum(m.q./(μ .- m.c))) - m.ε
-    return isnan(val) ? typemax(val) : val
-  end
 
-  return h, (μmin, μmax)
+function h(d::Burg, m::Model, λ)
+  val = sum(m.q.*log.(λ .- m.c)) + log(sum(m.q./(λ .- m.c))) - m.ε
+  return isnan(val) ? typemax(val) : val
 end
 
 
-function optimal(d::Burg, m::Model, μ::Real) 
-  p = m.q./(μ .- m.c)
+function optimal(d::Burg, m::Model, λ::Real) 
+  p = m.q./(λ .- m.c)
   return p./sum(p)
 end
 
@@ -202,21 +193,18 @@ and `false` otherwise.
 """
 check_ε(d::Hellinger, m::Model) = m.ε < 2 - 2*sqrt(sum(m.q[m.Imax]))
 
-function find_mu(d::Hellinger, m::Model)
-  μmin = m.cmax
-  μmax = m.cmax + (2 - m.ε)*(m.cmax - m.cmin)/m.ε
 
-  function h(μ)
-    val =  2*sum(m.q./(μ .- m.c)) - (2 - m.ε)*sqrt(sum(m.q./((μ .- m.c).^2)))
-    return isnan(val) ? - typemax(val) : val
-  end
+bounds(d::Hellinger, m::Model) = (m.cmax, m.cmax + (2 - m.ε)*(m.cmax - m.cmin)/m.ε)
 
-  return h, (μmin, μmax)
+
+function h(d::Hellinger, m::Model, λ)
+  val =  2*sum(m.q./(λ .- m.c)) - (2 - m.ε)*sqrt(sum(m.q./((λ .- m.c).^2)))
+  return isnan(val) ? - typemax(val) : val
 end
 
 
-function optimal(d::Hellinger, m::Model, μ::Real) 
-  p = m.q./(μ .- m.c).^2
+function optimal(d::Hellinger, m::Model, λ::Real) 
+  p = m.q./(λ .- m.c).^2
   return p./sum(p)
 end
 
@@ -257,21 +245,17 @@ and `false` otherwise.
 check_ε(d::ChiSquare, m::Model) = true
 
 
-function find_mu(d::ChiSquare, m::Model)
-  μmin = m.cmax
-  μmax = Inf
+bounds(d::ChiSquare, m::Model) = (m.cmax, Inf)
 
-  function h(μ)
-    val = sum(m.q .* sqrt.(μ .- m.c))*sum(m.q./sqrt.(μ .- m.c)) - 1 - m.ε
-    return isnan(val) ? - typemax(val) : val
-  end
 
-  return h, (μmin, μmax)
+function h(d::ChiSquare, m::Model, λ)
+  val = sum(m.q .* sqrt.(λ .- m.c))*sum(m.q./sqrt.(λ .- m.c)) - 1 - m.ε
+  return isnan(val) ? - typemax(val) : val
 end
 
 
-function optimal(d::ChiSquare, m::Model, μ::Real) 
-  p = m.q./sqrt.(μ .- m.c)
+function optimal(d::ChiSquare, m::Model, λ::Real) 
+  p = m.q./sqrt.(λ .- m.c)
   return p./sum(p)
 end
 
@@ -312,20 +296,16 @@ and `false` otherwise.
 check_ε(d::ModifiedChiSquare, m::Model) = true
 
 
-function find_mu(d::ModifiedChiSquare, m::Model)
-  μmin = - m.cmax
-  μmax = Inf
+bounds(d::ModifiedChiSquare, m::Model) = (- m.cmax, Inf)
 
-  function h(μ)
-    val = sum(m.q .* max.(μ .+ m.c, 0).^2) - (1 + m.ε) * (sum(m.q .* max.(μ .+ m.c, 0)))^2
-    return isnan(val) ? - typemax(val) : val
-  end
 
-  return h, (μmin, μmax)
+function h(d::ModifiedChiSquare, m::Model, λ)
+  val = sum(m.q .* max.(λ .+ m.c, 0).^2) - (1 + m.ε) * (sum(m.q .* max.(λ .+ m.c, 0)))^2
+  return isnan(val) ? - typemax(val) : val
 end
 
 
-function optimal(d::ModifiedChiSquare, m::Model, μ::Real) 
-  p = m.q.*max.(μ .+ m.c, 0)
+function optimal(d::ModifiedChiSquare, m::Model, λ::Real) 
+  p = m.q.*max.(λ .+ m.c, 0)
   return p./sum(p)
 end

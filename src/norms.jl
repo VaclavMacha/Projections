@@ -101,7 +101,7 @@ end
 """
   Lone
 
-An empty structure representing 1-1 norm.
+An empty structure representing l-1 norm.
 """
 struct Lone <: Norm end
 

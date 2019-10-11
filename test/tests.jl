@@ -1,4 +1,3 @@
-
 function divergences()
     return [Projections.Burg(),
             Projections.Hellinger(),
@@ -6,6 +5,16 @@ function divergences()
             Projections.ModifiedChiSquare(),
             Projections.KullbackLeibler()]
 end
+
+
+function norms()
+    return [Projections.Linf(),
+            Projections.Lone(),
+            Projections.Philpott()]
+end
+
+
+methods() = vcat(divergences(), norms())
 
 
 function test_generate(; atol = 1e-4)
@@ -30,6 +39,17 @@ function test_feasibility(d::Projections.Divergence, m::Projections.Model, p; at
 end
 
 
+function test_feasibility(d::Projections.Norm, m::Projections.Model, p; atol = 1e-4)
+    k = Projections.normtype(d)
+    Test.@testset "Feasibility" begin
+        Test.@test isapprox(sum(p), 1; atol = atol)
+        Test.@test LinearAlgebra.norm(p - m.q, k) <= 1.01 * m.ε
+        Test.@test minimum(p) >= - atol
+    end
+    return
+end
+
+
 function isfeasible(d::Projections.Divergence, m::Projections.Model, p; atol = 1e-4)
     ϕ = Projections.generate(d)
     return all([isapprox(sum(p), 1; atol = atol),
@@ -38,9 +58,17 @@ function isfeasible(d::Projections.Divergence, m::Projections.Model, p; atol = 1
 end
 
 
+function isfeasible(d::Projections.Norm, m::Projections.Model, p; atol = 1e-4)
+    k = Projections.normtype(d)
+    return all([isapprox(sum(p), 1; atol = atol),
+                LinearAlgebra.norm(p - m.q, k) <= 1.01 * m.ε,
+                minimum(p) >= - atol])
+end
+
+
 function test_model(m::Projections.Model; atol = 1e-4)
     Test.@testset "Comparison with the general solver" begin
-        Test.@testset "$(Projections.name(d))" for d in divergences()
+        Test.@testset "$(Projections.name(d))" for d in methods()
             
             p1 = Projections.solve(d,m);
             p2 = Projections.solve_exact(d,m);

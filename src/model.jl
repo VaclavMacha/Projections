@@ -12,12 +12,12 @@ Fields:
 - `Imax::Vector{Integer}`: set of indexes, which fulfill c[i] == cmax 
 """
 struct Model
-	q::Vector{Real}
-	c::Vector{Real}
+	q::Vector
+	c::Vector
 	ε::Real
 	cmin::Real
 	cmax::Real
-	Imax::Vector{Integer}
+	Imax::Vector
 end
 
 """

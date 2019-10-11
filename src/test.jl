@@ -3,23 +3,29 @@ using Projections, Test, Distributions, LinearAlgebra
 
 include("/home/vaclav/GoogleDrive/projects/julia/2019/Projections/test/tests.jl")
 
-Test.@testset "All tests" begin
-    test_generate()
-    test_models()
-end
+# Test.@testset "All tests" begin
+#     test_generate()
+#     test_models()
+# end
 
 
 # test_models()
 
-# q = rand(10)
-# q ./= sum(q)
-# c = rand(10)
-# ε = 1e-6
-# m = Model(q,c,ε)
+q = rand(10)
+q ./= sum(q)
+c = rand(10)
+ε = 1e-6
 
-# test_generate()
-# test_model(m)
-# test_model(Model(sort(q; rev = true), sort(c), ε)) 
+d = Projections.Philpott()
+
+m1 = Projections.Model(q,c,ε)
+m2 = Projections.Model(sort(q; rev = true), sort(c), ε)
+
+p1 = Projections.solve(d, m1);
+p2 = Projections.solve_exact(d, m1);
+
+# test_model(m1)
+# test_model(m2) 
 
 # d = Burg()
 # ϕ = generate(d)

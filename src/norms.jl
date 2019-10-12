@@ -236,7 +236,6 @@ function solve(d::Ltwo, m::Model)
     p[m.Imax] .= m.q[m.Imax] .+ 1/Ilen .- Isum/Ilen
 
     if sum(abs2.(p .- m.q)) <= m.ε^2
-      @info "plati veta"
       return p
     else
       μ = Roots.bisection(μ -> h(d, m, μ), bounds(d,m)...)

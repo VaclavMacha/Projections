@@ -45,7 +45,6 @@ function solve(d::Divergence, m::Model)
     ϕ = generate(d)
 
     if sum(m.q .* ϕ.(p ./ m.q)) <= m.ε
-      @info "plati veta"
       return p
     else
       λ = Roots.bisection(λ -> h(d, m, λ), bounds(d,m)...)

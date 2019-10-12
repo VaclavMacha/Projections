@@ -160,3 +160,86 @@ function solve(d::Lone, m::Model)
     end
     return p[invperm(perm)]
 end
+
+
+# ----------------------------------------------------------------------------------------------------------
+# l-2 norm
+# ----------------------------------------------------------------------------------------------------------
+"""
+  Ltwo
+
+An empty structure representing l-2 norm.
+"""
+struct Ltwo <: Norm end
+
+
+"""
+  name(d::Ltwo)
+
+Returns the full name of the l-2 norm.
+"""
+name(d::Ltwo) = "l-2 norm"
+
+
+"""
+  normtype(d::Ltwo)
+
+Returns the type of l-2 norm.
+"""
+normtype(d::Ltwo) = 2
+
+
+bounds(d::Ltwo, m::Model) = (1e-10, Inf)
+
+function g(d::Ltwo, m::Model, μ::Real)
+    n     = length(m.q)
+    s     = sort(μ.*m.q .+ m.c)
+    λ     = 0
+    g     = μ
+    g_old = g
+
+    for i in n-1:-1:1
+        g_old = g
+        g    -= (n - i)*(s[i + 1] - s[i])
+        if g <= 0
+            λ = s[i] - (s[i + 1] - s[i])/(g_old - g)*g
+            break
+        end
+    end
+    if g > 0
+        λ = Statistics.mean(m.c)
+    end
+    return λ
+end
+
+function h(d::Ltwo, m::Model, μ::Real)
+    λ = g(d, m, μ)
+    return sum((min.(λ .- m.c, μ .* m.q)).^2) - m.ε^2 * μ^2
+end
+
+
+function optimal(d::Ltwo, m::Model, μ::Real) 
+    λ = g(d, m, μ)
+    return max.(m.q .- (λ .- m.c)./μ, 0)
+end
+
+
+"""
+  solve(d::Ltwo, m::Model)
+
+Solves the given model `m` with l-2 norm using our new approach. 
+"""
+function solve(d::Ltwo, m::Model)
+    Ilen = length(m.Imax)
+    Isum = sum(m.q[m.Imax])
+    p    = zero(m.q)
+    p[m.Imax] .= m.q[m.Imax] .+ 1/Ilen .- Isum/Ilen
+
+    if sum(abs2.(p .- m.q)) <= m.ε^2
+      @info "plati veta"
+      return p
+    else
+      μ = Roots.bisection(μ -> h(d, m, μ), bounds(d,m)...)
+      return optimal(d, m, μ)
+    end
+end

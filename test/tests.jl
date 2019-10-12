@@ -10,6 +10,7 @@ end
 function norms()
     return [Projections.Linf(),
             Projections.Lone(),
+            Projections.Ltwo(),
             Projections.Philpott()]
 end
 
@@ -77,7 +78,7 @@ function test_model(m::Projections.Model; atol = 1e-4)
 
             if isfeasible(d, m, p2; atol = 1e-4)
                 Test.@testset "Optimality" begin
-                    Test.@test m.c'*p1 >= m.c'*p2 - atol
+                    Test.@test isapprox(m.c'*p1, m.c'*p2, atol = atol)
                 end
             end
         end

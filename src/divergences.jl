@@ -47,8 +47,7 @@ function solve(d::Divergence, m::Model)
     if sum(m.q .* ϕ.(p ./ m.q)) <= m.ε
       return p
     else
-      λ = Roots.bisection(λ -> h(d, m, λ), bounds(d,m)...)
-      return optimal(d, m, λ)
+      return optimal(d, m, findroot(d, m))
     end
 end
 
@@ -96,7 +95,7 @@ bounds(d::KullbackLeibler, m::Model) = (0, (m.cmax - m.cmin)/m.ε)
 function h(d::KullbackLeibler, m::Model, λ)
   p_hat = m.q.*exp.(m.c./λ)
   val   = p_hat' * (m.c./λ .- log(sum(p_hat)) .- m.ε)
-  return isnan(val) || val == -typemax(val) ? typemax(val) : val
+  return isnan(val) || val == - typemax(val) ? typemax(val) : val
 end
 
 
@@ -253,6 +252,12 @@ function h(d::ChiSquare, m::Model, λ)
 end
 
 
+function ∇h(d::ChiSquare, m::Model, λ::Real)
+  λc = λ .- m.c
+  return (sum(m.q ./ sqrt.(λc))^2 - sum(m.q .* sqrt.(λc))*sum(m.q ./ (λc.^(3/2))))/2
+end
+
+
 function optimal(d::ChiSquare, m::Model, λ::Real) 
   p = m.q./sqrt.(λ .- m.c)
   return p./sum(p)
@@ -301,6 +306,12 @@ bounds(d::ModifiedChiSquare, m::Model) = (- m.cmax, Inf)
 function h(d::ModifiedChiSquare, m::Model, λ)
   val = sum(m.q .* max.(λ .+ m.c, 0).^2) - (1 + m.ε) * (sum(m.q .* max.(λ .+ m.c, 0)))^2
   return isnan(val) ? - typemax(val) : val
+end
+
+
+function ∇h(d::ModifiedChiSquare, m::Model, λ::Real)
+    I = findall(λ .+ m.c .>= 0) 
+    return 2 * sum(m.q[I] .* (λ .+ m.c[I])) * (1 - (1 + m.ε) * sum(m.q[I]))
 end
 
 

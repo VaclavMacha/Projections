@@ -191,6 +191,7 @@ normtype(d::Ltwo) = 2
 
 bounds(d::Ltwo, m::Model) = (1e-10, Inf)
 
+
 function g(d::Ltwo, m::Model, μ::Real)
     n     = length(m.q)
     s     = sort(μ.*m.q .+ m.c)
@@ -212,14 +213,20 @@ function g(d::Ltwo, m::Model, μ::Real)
     return λ
 end
 
-function h(d::Ltwo, m::Model, μ::Real)
-    λ = g(d, m, μ)
+function h(d::Ltwo, m::Model, μ::Real; λ::Real = g(d, m, μ))
     return sum((min.(λ .- m.c, μ .* m.q)).^2) - m.ε^2 * μ^2
 end
 
 
-function optimal(d::Ltwo, m::Model, μ::Real) 
-    λ = g(d, m, μ)
+function ∇h(d::Ltwo, m::Model, μ::Real; λ::Real = g(d, m, μ))
+    q_i = @view m.q[λ .- m.c .>  μ .* m.q]
+    c_i = @view m.c[λ .- m.c .<= μ .* m.q]
+
+    return 2*μ*(sum(abs2, q_i) - m.ε^2) - 2*sum(q_i)*sum(λ .- c_i)/length(c_i)
+end
+
+
+function optimal(d::Ltwo, m::Model, μ::Real; λ::Real = g(d, m, μ)) 
     return max.(m.q .- (λ .- m.c)./μ, 0)
 end
 
@@ -235,10 +242,9 @@ function solve(d::Ltwo, m::Model)
     p    = zero(m.q)
     p[m.Imax] .= m.q[m.Imax] .+ 1/Ilen .- Isum/Ilen
 
-    if sum(abs2.(p .- m.q)) <= m.ε^2
+    if sum(abs2, p - m.q) <= m.ε^2
       return p
     else
-      μ = Roots.bisection(μ -> h(d, m, μ), bounds(d,m)...)
-      return optimal(d, m, μ)
+      return optimal(d, m, findroot(d, m))
     end
 end

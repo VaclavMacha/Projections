@@ -10,5 +10,6 @@ include("model.jl")
 include("divergences.jl")
 include("norms.jl")
 include("phillpott.jl")
+include("findroot.jl")
 
 end # module

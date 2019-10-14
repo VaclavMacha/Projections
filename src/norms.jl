@@ -1,5 +1,5 @@
 """
-  Norm
+    Norm
 
 An abstract type covering all norms.
 """
@@ -7,7 +7,7 @@ abstract type Norm end
 
 
 """
-  solve_exact(d::Norm, m::Model)
+    solve_exact(d::Norm, m::Model)
 
 Solves the given model `m` with norm `d` using the ECOS solver. 
 """
@@ -30,7 +30,7 @@ end
 # l-∞ norm
 # ----------------------------------------------------------------------------------------------------------
 """
-  Linf
+    Linf
 
 An empty structure representing l-infinity norm.
 """
@@ -38,7 +38,7 @@ struct Linf <: Norm end
 
 
 """
-  name(d::Linf)
+    name(d::Linf)
 
 Returns the full name of the l-infinity norm.
 """
@@ -46,7 +46,7 @@ name(d::Linf) = "l-infinity norm"
 
 
 """
-  normtype(d::Linf)
+    normtype(d::Linf)
 
 Returns the type of l-infinity norm.
 """
@@ -54,7 +54,7 @@ normtype(d::Linf) = Inf
 
 
 """
-  solve(d::Linf, m::Model)
+    solve(d::Linf, m::Model)
 
 Solves the given model `m` with l-infinity norm using our new approach. 
 """
@@ -99,7 +99,7 @@ end
 # l-1 norm
 # ----------------------------------------------------------------------------------------------------------
 """
-  Lone
+    Lone
 
 An empty structure representing l-1 norm.
 """
@@ -107,7 +107,7 @@ struct Lone <: Norm end
 
 
 """
-  name(d::Lone)
+    name(d::Lone)
 
 Returns the full name of the l-1 norm.
 """
@@ -115,7 +115,7 @@ name(d::Lone) = "l-1 norm"
 
 
 """
-  normtype(d::Lone)
+    normtype(d::Lone)
 
 Returns the type of l-1 norm.
 """
@@ -123,7 +123,7 @@ normtype(d::Lone) = 1
 
 
 """
-  solve(d::Lone, m::Model)
+    solve(d::Lone, m::Model)
 
 Solves the given model `m` with l-1 norm using our new approach. 
 """
@@ -166,7 +166,7 @@ end
 # l-2 norm
 # ----------------------------------------------------------------------------------------------------------
 """
-  Ltwo
+    Ltwo
 
 An empty structure representing l-2 norm.
 """
@@ -174,7 +174,7 @@ struct Ltwo <: Norm end
 
 
 """
-  name(d::Ltwo)
+    name(d::Ltwo)
 
 Returns the full name of the l-2 norm.
 """
@@ -182,7 +182,7 @@ name(d::Ltwo) = "l-2 norm"
 
 
 """
-  normtype(d::Ltwo)
+    normtype(d::Ltwo)
 
 Returns the type of l-2 norm.
 """
@@ -232,7 +232,7 @@ end
 
 
 """
-  solve(d::Ltwo, m::Model)
+    solve(d::Ltwo, m::Model)
 
 Solves the given model `m` with l-2 norm using our new approach. 
 """

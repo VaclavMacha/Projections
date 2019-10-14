@@ -1,5 +1,5 @@
 """
-  Philpott
+    Philpott
 
 An empty structure representing Philpott's approach for l-2 norm.
 """
@@ -7,7 +7,7 @@ struct Philpott <: Norm end
 
 
 """
-  name(d::Philpott)
+    name(d::Philpott)
 
 Returns the full name of the Philpott's method.
 """
@@ -15,7 +15,7 @@ name(d::Philpott) = "l-2 norm (Philpott)"
 
 
 """
-  normtype(d::Philpott)
+    normtype(d::Philpott)
 
 Returns the type of l-2 norm.
 """
@@ -23,7 +23,7 @@ normtype(d::Philpott) = 2
 
 
 """
-  solve(d::Philpott, m::Model)
+    solve(d::Philpott, m::Model)
 
 Solves the given model `m` with l-2 norm using Philpott's approach. 
 """

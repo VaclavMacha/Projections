@@ -6,26 +6,6 @@ An abstract type covering all norms.
 abstract type Norm end
 
 
-"""
-    solve_exact(d::Norm, m::Model)
-
-Solves the given model `m` with norm `d` using the ECOS solver. 
-"""
-function solve_exact(d::Norm, m::Model)
-    k = normtype(d)
-    p = Convex.Variable(length(m.q))
-
-    objective   = m.c'*p
-    constraints = [sum(p) == 1,
-                   p >= 0,
-                   Convex.norm(p - m.q, k) <= m.ε]
-
-    problem = Convex.maximize(objective, constraints)
-    Convex.solve!(problem, ECOS.ECOSSolver(verbose = false), verbose = false)
-    return vec(p.value)
-end
-
-
 # ----------------------------------------------------------------------------------------------------------
 # l-∞ norm
 # ----------------------------------------------------------------------------------------------------------
@@ -54,11 +34,11 @@ normtype(d::Linf) = Inf
 
 
 """
-    solve(d::Linf, m::Model)
+    optimal(d::Linf, m::Model; kwargs...)
 
-Solves the given model `m` with l-infinity norm using our new approach. 
+Returns the optimal solution of the DRO model 'm' with l-infinity norm. 
 """
-function solve(d::Linf, m::Model)
+function optimal(d::Linf, m::Model)
     c      = .- m.c
     perm   = sortperm(c)
     c      = c[perm]
@@ -123,11 +103,11 @@ normtype(d::Lone) = 1
 
 
 """
-    solve(d::Lone, m::Model)
+    optimal(d::Lone, m::Model)
 
-Solves the given model `m` with l-1 norm using our new approach. 
+Returns the optimal solution of the DRO model 'm' with l-1 norm.
 """
-function solve(d::Lone, m::Model)
+function optimal(d::Lone, m::Model; kwargs...)
     c    = .- m.c
     perm = sortperm(c)
     c    = c[perm]
@@ -189,7 +169,24 @@ Returns the type of l-2 norm.
 normtype(d::Ltwo) = 2
 
 
-bounds(d::Ltwo, m::Model) = (1e-10, Inf)
+"""
+    initial(d::Ltwo, m::Model)
+
+Returns the initial point for finding the root of the function `h` using the newton method. 
+"""
+function initial(d::Ltwo, m::Model)
+    f(μ)  = h(d, m, μ)
+    μ     = 10
+    f_val = f(μ)
+
+    while f_val >= 0
+        f == 0 && return μ
+
+        μ    *= 10
+        f_val = f(μ)
+    end
+    return μ
+end
 
 
 function g(d::Ltwo, m::Model, μ::Real)
@@ -213,6 +210,7 @@ function g(d::Ltwo, m::Model, μ::Real)
     return λ
 end
 
+
 function h(d::Ltwo, m::Model, μ::Real; λ::Real = g(d, m, μ))
     return sum((min.(λ .- m.c, μ .* m.q)).^2) - m.ε^2 * μ^2
 end
@@ -226,27 +224,15 @@ function ∇h(d::Ltwo, m::Model, μ::Real; λ::Real = g(d, m, μ))
 end
 
 
-function optimal(d::Ltwo, m::Model, μ::Real; λ::Real = g(d, m, μ)) 
+"""
+    optimal(d::Ltwo, m::Model; kwargs...) 
+
+Returns the optimal solution of the DRO model 'm' with l-2 norm.
+"""
+function optimal(d::Ltwo, m::Model; kwargs...)
+    μ = newton(d, m; kwargs...) 
+    λ = g(d, m, μ)
     return max.(m.q .- (λ .- m.c)./μ, 0)
-end
-
-
-"""
-    solve(d::Ltwo, m::Model)
-
-Solves the given model `m` with l-2 norm using our new approach. 
-"""
-function solve(d::Ltwo, m::Model)
-    Ilen = length(m.Imax)
-    Isum = sum(m.q[m.Imax])
-    p    = zero(m.q)
-    p[m.Imax] .= m.q[m.Imax] .+ 1/Ilen .- Isum/Ilen
-
-    if sum(abs2, p - m.q) <= m.ε^2
-      return p
-    else
-      return optimal(d, m, findroot(d, m))
-    end
 end
 
 
@@ -278,11 +264,11 @@ normtype(d::Philpott) = 2
 
 
 """
-    solve(d::Philpott, m::Model)
+    optimal(d::Philpott, m::Model; atol::Real = 1e-10) 
 
-Solves the given model `m` with l-2 norm using Philpott's approach. 
+Returns the optimal solution given by Philpott's algorithm of the DRO model 'm' with l-2 norm.
 """
-function solve(d::Philpott, m::Model; atol::Real = 1e-10)
+function optimal(d::Philpott, m::Model; atol::Real = 1e-10, kwargs...)
     n      = length(m.q)
     c_mean = Statistics.mean(m.c)
     c_std  = Statistics.stdm(m.c, c_mean; corrected = false)

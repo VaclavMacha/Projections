@@ -7,52 +7,6 @@ abstract type Divergence end
 
 
 # ----------------------------------------------------------------------------------------------------------
-# Solvers
-# ----------------------------------------------------------------------------------------------------------
-"""
-    solve_exact(d::Divergence, m::Model)
-
-Solves the given model `m` with ϕ-divergence `d` using the Ipopt solver. 
-"""
-function solve_exact(d::Divergence, m::Model)
-
-    model = JuMP.Model(JuMP.with_optimizer(Ipopt.Optimizer, print_level = 0))
-
-    ϕ = generate(d)
-    JuMP.register(model, :ϕ, 1, ϕ, autodiff = true)
-
-    JuMP.@variable(model, p[1:length(m.q)] >= 0)
-
-    JuMP.@objective(model, Max, m.c'*p)
-    JuMP.@constraint(model, sum(p) == 1)
-    JuMP.@NLconstraint(model, sum(m.q[i]*ϕ(p[i]/m.q[i]) for i in eachindex(p)) <= m.ε)
-
-    JuMP.optimize!(model)
-    return JuMP.value.(p)
-end
-
-
-"""
-    solve(d::Divergence, m::Model)
-
-Solves the given model `m` with ϕ-divergence `d` using our new approach. 
-"""
-function solve(d::Divergence, m::Model)
-    p = zero(m.q)
-    p[m.Imax] .= m.q[m.Imax]
-    p ./= sum(m.q[m.Imax])
-
-    ϕ = generate(d)
-
-    if sum(m.q .* ϕ.(p ./ m.q)) <= m.ε
-      return p
-    else
-      return optimal(d, m, findroot(d, m))
-    end
-end
-
-
-# ----------------------------------------------------------------------------------------------------------
 # Kullback-Leibler divergence
 # ----------------------------------------------------------------------------------------------------------
 """
@@ -81,25 +35,27 @@ name(d::KullbackLeibler) = "Kullback-Leibler divergence"
 
 
 """
-    check_ε(d::KullbackLeibler, m::Model)
+    bounds(d::KullbackLeibler, m::Model)
 
-Returns `true` if the constraint for the ε parameter for the Kullback-Leibler divergence is met
-and `false` otherwise.
+Returns lower and upper bound for finding the root of the function `h` using the bisection method. 
 """
-check_ε(d::KullbackLeibler, m::Model) = m.ε < -log(sum(m.q[m.Imax]))
-
-
 bounds(d::KullbackLeibler, m::Model) = (0, (m.cmax - m.cmin)/m.ε)
 
 
-function h(d::KullbackLeibler, m::Model, λ)
+function h(d::KullbackLeibler, m::Model, λ::Real)
     p_hat = m.q.*exp.(m.c./λ)
     val   = p_hat' * (m.c./λ .- log(sum(p_hat)) .- m.ε)
     return isnan(val) || val == - typemax(val) ? typemax(val) : val
 end
 
 
-function optimal(d::KullbackLeibler, m::Model, λ::Real) 
+"""
+    function optimal(d::KullbackLeibler, m::Model; kwargs...)  
+
+Returns the optimal solution of the DRO model 'm' with Kullback-Leibler divergence.
+"""
+function optimal(d::KullbackLeibler, m::Model; kwargs...) 
+    λ = bisection(d, m; kwargs...)
     p = m.q.*exp.(m.c./λ)
     return p./sum(p)
 end
@@ -133,24 +89,26 @@ name(d::Burg) = "Burg entropy"
 
 
 """
-    check_ε(d::Burg, m::Model)
+    bounds(d::Burg, m::Model)
 
-Returns `true` if the constraint for the ε parameter for the Burg entropy is met
-and `false` otherwise.
+Returns lower and upper bound for finding the root of the function `h` using the bisection method. 
 """
-check_ε(d::Burg, m::Model) = true
-
-
 bounds(d::Burg, m::Model) = (m.cmax, m.cmax + (m.cmax - m.cmin)/m.ε)
 
 
-function h(d::Burg, m::Model, λ)
+function h(d::Burg, m::Model, λ::Real)
     val = sum(m.q.*log.(λ .- m.c)) + log(sum(m.q./(λ .- m.c))) - m.ε
     return isnan(val) ? typemax(val) : val
 end
 
 
-function optimal(d::Burg, m::Model, λ::Real) 
+"""
+    function optimal(d::Burg, m::Model; kwargs...)  
+
+Returns the optimal solution of the DRO model 'm' with Burg entropy.
+"""
+function optimal(d::Burg, m::Model; kwargs...) 
+    λ = bisection(d, m; kwargs...)
     p = m.q./(λ .- m.c)
     return p./sum(p)
 end
@@ -184,24 +142,26 @@ name(d::Hellinger) = "Hellinger distance"
 
 
 """
-    check_ε(d::Hellinger, m::Model)
+    bounds(d::Hellinger, m::Model)
 
-Returns `true` if the constraint for the ε parameter for the Hellinger distance is met
-and `false` otherwise.
+Returns lower and upper bound for finding the root of the function `h` using the bisection method. 
 """
-check_ε(d::Hellinger, m::Model) = m.ε < 2 - 2*sqrt(sum(m.q[m.Imax]))
-
-
 bounds(d::Hellinger, m::Model) = (m.cmax, m.cmax + (2 - m.ε)*(m.cmax - m.cmin)/m.ε)
 
 
-function h(d::Hellinger, m::Model, λ)
+function h(d::Hellinger, m::Model, λ::Real)
     val =  2*sum(m.q./(λ .- m.c)) - (2 - m.ε)*sqrt(sum(m.q./((λ .- m.c).^2)))
     return isnan(val) ? - typemax(val) : val
 end
 
 
-function optimal(d::Hellinger, m::Model, λ::Real) 
+"""
+    function optimal(d::Hellinger, m::Model; kwargs...)  
+
+Returns the optimal solution of the DRO model 'm' with Hellinger distance.
+"""
+function optimal(d::Hellinger, m::Model; kwargs...) 
+    λ = bisection(d, m; kwargs...)
     p = m.q./(λ .- m.c).^2
     return p./sum(p)
 end
@@ -235,18 +195,27 @@ name(d::ChiSquare) = "χ²-distance"
 
 
 """
-    check_ε(d::ChiSquare, m::Model)
+    initial(d::ChiSquare, m::Model)
 
-Returns `true` if the constraint for the ε parameter for the χ²-distance is met
-and `false` otherwise.
+Returns the initial point for finding the root of the function `h` using the newton method. 
 """
-check_ε(d::ChiSquare, m::Model) = true
+function initial(d::ChiSquare, m::Model)
+    f(μ)  = h(d, m, μ)
+    λ_min = m.cmax
+    q     = 0.01
+    f_val = f(λ_min + q)
+
+    while f_val <= 0
+        f == 0 && return λ_min + q
+
+        q    /= 10
+        f_val = f(λ_min + q)
+    end
+    return λ_min + q
+end
 
 
-bounds(d::ChiSquare, m::Model) = (m.cmax, Inf)
-
-
-function h(d::ChiSquare, m::Model, λ)
+function h(d::ChiSquare, m::Model, λ::Real)
     val = sum(m.q .* sqrt.(λ .- m.c))*sum(m.q./sqrt.(λ .- m.c)) - 1 - m.ε
     return isnan(val) ? - typemax(val) : val
 end
@@ -258,7 +227,13 @@ function ∇h(d::ChiSquare, m::Model, λ::Real)
 end
 
 
-function optimal(d::ChiSquare, m::Model, λ::Real) 
+"""
+    function optimal(d::ChiSquare, m::Model; kwargs...)  
+
+Returns the optimal solution of the DRO model 'm' with χ²-distance.
+"""
+function optimal(d::ChiSquare, m::Model; kwargs...) 
+    λ = newton(d, m; kwargs...)
     p = m.q./sqrt.(λ .- m.c)
     return p./sum(p)
 end
@@ -292,18 +267,26 @@ name(d::ModifiedChiSquare) = "Modified χ²-distance"
 
 
 """
-  check_ε(d::ModifiedChiSquare, m::Model)
+    initial(d::ModifiedChiSquare, m::Model)
 
-Returns `true` if the constraint for the ε parameter for the modified χ²-distance is met
-and `false` otherwise.
+Returns the initial point for finding the root of the function `h` using the newton method. 
 """
-check_ε(d::ModifiedChiSquare, m::Model) = true
+function initial(d::ModifiedChiSquare, m::Model)
+    f(λ)  = h(d, m, λ)
+    λ     = - m.cmax + 10
+    f_val = f(λ)
+
+    while f_val >= 0
+        f == 0 && return λ
+
+        λ    *= 10
+        f_val = f(λ)
+    end
+    return λ
+end
 
 
-bounds(d::ModifiedChiSquare, m::Model) = (- m.cmax, Inf)
-
-
-function h(d::ModifiedChiSquare, m::Model, λ)
+function h(d::ModifiedChiSquare, m::Model, λ::Real)
     val = sum(m.q .* max.(λ .+ m.c, 0).^2) - (1 + m.ε) * (sum(m.q .* max.(λ .+ m.c, 0)))^2
     return isnan(val) ? - typemax(val) : val
 end
@@ -315,7 +298,13 @@ function ∇h(d::ModifiedChiSquare, m::Model, λ::Real)
 end
 
 
-function optimal(d::ModifiedChiSquare, m::Model, λ::Real) 
+"""
+    function optimal(d::ModifiedChiSquare, m::Model; kwargs...)  
+
+Returns the optimal solution of the DRO model 'm' with modified χ²-distance.
+"""
+function optimal(d::ModifiedChiSquare, m::Model; kwargs...) 
+    λ = newton(d, m; kwargs...)
     p = m.q.*max.(λ .+ m.c, 0)
     return p./sum(p)
 end

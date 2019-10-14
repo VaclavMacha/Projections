@@ -5,8 +5,8 @@ A structure representing the DRO model.
 
 Fields:
 - `q::Vector{Real}`: probability distribution (vector)
-- `ε::Real`: 
 - `c::Vector{Real}` vector of weights
+- `ε::Real`: 
 - `cmin::Real`: minimum of the vector c
 - `cmax::Real`: maximum of the vector c
 - `Imax::Vector{Integer}`: set of indexes, which fulfill c[i] == cmax 

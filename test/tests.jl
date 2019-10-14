@@ -82,7 +82,7 @@ function test_model(m::Model)
         Test.@testset "$(Projections.name(d))" for d in methods()
             
             p       = solve(d,m);
-            psolver = solve_exact(d,m);
+            psolver = generalsolve(d,m);
 
             test_feasibility(d, m, p; atol = 1e-6)
             test_optimality(d, m, p, psolver; atol = 1e-4)

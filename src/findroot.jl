@@ -1,51 +1,14 @@
-function findroot(d::Union{KullbackLeibler, Burg, Hellinger}, m::Model)
-    return bisection(d, m)
-end
+"""
+    newton(d::Union{ChiSquare, ModifiedChiSquare}, m::Model; maxiter::Integer = 1000, atol::Real = 1e-10)
 
-
-function findroot(d::Union{ChiSquare, ModifiedChiSquare, Ltwo}, m::Model)
-    return newton(d, m)
-end
-
-
-function initialization(d::Union{ModifiedChiSquare, Ltwo}, m::Model)
-    f(μ)  = h(d, m, μ)
-
-    μ     = 10 + bounds(d,m)[1]
-    f_val = f(μ)
-
-    while f_val >= 0
-        f == 0 && return μ
-
-        μ    *= 10
-        f_val = f(μ)
-    end
-    return μ
-end
-
-
-function initialization(d::ChiSquare, m::Model)
-    f(μ)  = h(d, m, μ)
-
-    μ_min = bounds(d,m)[1]
-    q     = 0.01
-    f_val = f(μ_min + q)
-
-    while f_val <= 0
-        f == 0 && return μ_min + q
-
-        q    /= 10
-        f_val = f(μ_min + q)
-    end
-    return μ_min + q
-end
-
-
+A simple bisection method for finding the root of the function `h` for the DRO problem with
+χ²-distance or modified χ²-distance.
+"""
 function newton(d::Union{ChiSquare, ModifiedChiSquare}, m::Model; maxiter::Integer = 1000, atol::Real = 1e-10)
     f(λ)  = h(d, m, λ)
     ∇f(λ) = ∇h(d, m, λ)
 
-    λ     = initialization(d,m)
+    λ     = initial(d,m)
     f_val = f(λ)
 
     f_val == 0 && return λ
@@ -60,11 +23,17 @@ function newton(d::Union{ChiSquare, ModifiedChiSquare}, m::Model; maxiter::Integ
 end
 
 
+"""
+    newton(d::Ltwo, m::Model; maxiter::Integer = 1000, atol::Real = 1e-10)
+
+A simple bisection method for finding the root of the function `h` for the DRO problem with
+l-2 norm.
+"""
 function newton(d::Ltwo, m::Model; maxiter::Integer = 1000, atol::Real = 1e-10)
     f(μ, λ)  = h(d, m, μ; λ = λ)
     ∇f(μ, λ) = ∇h(d, m, μ; λ = λ)
 
-    μ     = initialization(d,m)
+    μ     = initial(d,m)
     λ     = g(d, m, μ)
     f_val = f(μ, λ)
 
@@ -81,6 +50,12 @@ function newton(d::Ltwo, m::Model; maxiter::Integer = 1000, atol::Real = 1e-10)
 end
 
 
+"""
+    bisection(d::Union{KullbackLeibler, Burg, Hellinger}, m::Model; maxiter::Integer = 1000, atol::Real = 1e-10)
+
+A simple bisection method for finding the root of the function `h` for the DRO problem with
+Kullback-Leibler divergence, Burg entropy or Hellinger distance.
+"""
 function bisection(d::Union{KullbackLeibler, Burg, Hellinger}, m::Model; maxiter::Integer = 1000, atol::Real = 1e-10)
     f(μ) = h(d, m, μ)
     a, b = bounds(d,m)

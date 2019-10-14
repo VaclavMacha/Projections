@@ -1,6 +1,6 @@
 module Projections
 
-import JuMP, Ipopt, Convex, ECOS, Roots, LinearAlgebra, Statistics
+import JuMP, Ipopt, Convex, ECOS, LinearAlgebra, Statistics
 
 export Model, solve, solve_exact 
 export Divergence, KullbackLeibler, Burg, Hellinger, ChiSquare, ModifiedChiSquare

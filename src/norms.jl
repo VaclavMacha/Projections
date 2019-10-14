@@ -178,12 +178,14 @@ function initial(d::Ltwo, m::Model)
     f(μ)  = h(d, m, μ)
     μ     = 10
     f_val = f(μ)
+    add_eval()
 
     while f_val >= 0
         f == 0 && return μ
 
         μ    *= 10
         f_val = f(μ)
+        add_eval()
     end
     return μ
 end
@@ -230,9 +232,18 @@ end
 Returns the optimal solution of the DRO model 'm' with l-2 norm.
 """
 function optimal(d::Ltwo, m::Model; kwargs...)
-    μ = newton(d, m; kwargs...) 
-    λ = g(d, m, μ)
-    return max.(m.q .- (λ .- m.c)./μ, 0)
+    Ilen = length(m.Imax)
+    Isum = sum(m.q[m.Imax])
+    p    = zero(m.q)
+    p[m.Imax] .= m.q[m.Imax] .+ 1/Ilen .- Isum/Ilen
+
+    if sum(abs2, p - m.q) <= m.ε^2
+        return p
+    else
+        μ = newton(d, m; kwargs...) 
+        λ = g(d, m, μ)
+        return max.(m.q .- (λ .- m.c)./μ, 0)
+    end
 end
 
 

@@ -6,6 +6,13 @@ An abstract type covering all ϕ-divergence.
 abstract type Divergence end
 
 
+function optimal_simple(d::Divergence, m::Model)
+    p = zero(m.q)
+    p[m.Imax] .= m.q[m.Imax]
+    return p./sum(m.q[m.Imax])
+end
+
+
 # ----------------------------------------------------------------------------------------------------------
 # Kullback-Leibler divergence
 # ----------------------------------------------------------------------------------------------------------
@@ -55,9 +62,16 @@ end
 Returns the optimal solution of the DRO model 'm' with Kullback-Leibler divergence.
 """
 function optimal(d::KullbackLeibler, m::Model; kwargs...) 
-    λ = bisection(d, m; kwargs...)
-    p = m.q.*exp.(m.c./λ)
-    return p./sum(p)
+    p = optimal_simple(d, m)
+    ϕ = generate(d)
+
+    if sum(m.q .* ϕ.(p ./ m.q)) <= m.ε
+        return p
+    else
+        λ = bisection(d, m; kwargs...)
+        p = m.q.*exp.(m.c./λ)
+        return p./sum(p)
+    end
 end
 
 
@@ -108,9 +122,16 @@ end
 Returns the optimal solution of the DRO model 'm' with Burg entropy.
 """
 function optimal(d::Burg, m::Model; kwargs...) 
-    λ = bisection(d, m; kwargs...)
-    p = m.q./(λ .- m.c)
-    return p./sum(p)
+    p = optimal_simple(d, m)
+    ϕ = generate(d)
+
+    if sum(m.q .* ϕ.(p ./ m.q)) <= m.ε
+        return p
+    else
+        λ = bisection(d, m; kwargs...)
+        p = m.q./(λ .- m.c)
+        return p./sum(p)
+    end
 end
 
 
@@ -161,9 +182,16 @@ end
 Returns the optimal solution of the DRO model 'm' with Hellinger distance.
 """
 function optimal(d::Hellinger, m::Model; kwargs...) 
-    λ = bisection(d, m; kwargs...)
-    p = m.q./(λ .- m.c).^2
-    return p./sum(p)
+    p = optimal_simple(d, m)
+    ϕ = generate(d)
+
+    if sum(m.q .* ϕ.(p ./ m.q)) <= m.ε
+        return p
+    else
+        λ = bisection(d, m; kwargs...)
+        p = m.q./(λ .- m.c).^2
+        return p./sum(p)
+    end
 end
 
 
@@ -204,12 +232,14 @@ function initial(d::ChiSquare, m::Model)
     λ_min = m.cmax
     q     = 0.01
     f_val = f(λ_min + q)
+    add_eval()
 
     while f_val <= 0
         f == 0 && return λ_min + q
 
         q    /= 10
         f_val = f(λ_min + q)
+        add_eval()
     end
     return λ_min + q
 end
@@ -233,9 +263,16 @@ end
 Returns the optimal solution of the DRO model 'm' with χ²-distance.
 """
 function optimal(d::ChiSquare, m::Model; kwargs...) 
-    λ = newton(d, m; kwargs...)
-    p = m.q./sqrt.(λ .- m.c)
-    return p./sum(p)
+    p = optimal_simple(d, m)
+    ϕ = generate(d)
+
+    if sum(m.q .* ϕ.(p ./ m.q)) <= m.ε
+        return p
+    else
+        λ = newton(d, m; kwargs...)
+        p = m.q./sqrt.(λ .- m.c)
+        return p./sum(p)
+    end
 end
 
 
@@ -275,12 +312,14 @@ function initial(d::ModifiedChiSquare, m::Model)
     f(λ)  = h(d, m, λ)
     λ     = - m.cmax + 10
     f_val = f(λ)
+    add_eval()
 
     while f_val >= 0
         f == 0 && return λ
 
         λ    *= 10
         f_val = f(λ)
+        add_eval()
     end
     return λ
 end
@@ -303,8 +342,15 @@ end
 
 Returns the optimal solution of the DRO model 'm' with modified χ²-distance.
 """
-function optimal(d::ModifiedChiSquare, m::Model; kwargs...) 
-    λ = newton(d, m; kwargs...)
-    p = m.q.*max.(λ .+ m.c, 0)
-    return p./sum(p)
+function optimal(d::ModifiedChiSquare, m::Model; kwargs...)
+    p = optimal_simple(d, m)
+    ϕ = generate(d)
+
+    if sum(m.q .* ϕ.(p ./ m.q)) <= m.ε
+        return p
+    else
+        λ = newton(d, m; kwargs...)
+        p = m.q.*max.(λ .+ m.c, 0)
+        return p./sum(p)
+    end
 end

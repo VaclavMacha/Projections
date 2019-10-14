@@ -9,8 +9,8 @@ export Norm, Linf, Lone, Ltwo, Philpott
 include("model.jl")
 include("divergences.jl")
 include("norms.jl")
+include("utilities.jl")
 include("findroot.jl")
 include("solve.jl")
-include("generalsolve.jl")
 
 end # module

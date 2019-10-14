@@ -10,6 +10,7 @@ function newton(d::Union{ChiSquare, ModifiedChiSquare}, m::Model; maxiter::Integ
 
     λ     = initial(d,m)
     f_val = f(λ)
+    add_eval()
 
     f_val == 0 && return λ
 
@@ -18,6 +19,7 @@ function newton(d::Union{ChiSquare, ModifiedChiSquare}, m::Model; maxiter::Integ
 
         λ    -= f_val/∇f(λ)
         f_val = f(λ)
+        add_eval()
     end
     return λ
 end
@@ -36,6 +38,7 @@ function newton(d::Ltwo, m::Model; maxiter::Integer = 1000, atol::Real = 1e-10)
     μ     = initial(d,m)
     λ     = g(d, m, μ)
     f_val = f(μ, λ)
+    add_eval()
 
     f_val == 0 && return μ
 
@@ -45,6 +48,7 @@ function newton(d::Ltwo, m::Model; maxiter::Integer = 1000, atol::Real = 1e-10)
         μ    -= f_val/∇f(μ, λ)
         λ     = g(d, m, μ)
         f_val = f(μ, λ)
+        add_eval()
     end
     return μ
 end
@@ -63,6 +67,7 @@ function bisection(d::Union{KullbackLeibler, Burg, Hellinger}, m::Model; maxiter
 
     f_a = f(a)
     f_b = f(b)
+    add_eval(2)
     @assert f_a*f_b <= 0 "The interval [a,b] is not a bracketing interval."
     
     f_a == 0 && return a
@@ -73,11 +78,12 @@ function bisection(d::Union{KullbackLeibler, Burg, Hellinger}, m::Model; maxiter
 
         c   = Statistics.middle(a, b)
         f_c = f(c)
+        add_eval()
 
         f_c == 0 && break
 
         if f_a*f_c > 0
-            a, f_a = c, f(c)
+            a, f_a = c, f_c
         else
             b = c
         end

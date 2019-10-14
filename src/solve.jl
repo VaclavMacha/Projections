@@ -1,64 +1,78 @@
 # ----------------------------------------------------------------------------------------------------------
-# ϕ-divergences
+# our approach
 # ----------------------------------------------------------------------------------------------------------
 """
-    solve(d::Divergence, m::Model; kwargs...)
+    solve(d::Union{<:Divergence, <:Norm}, m::Model; kwargs...)
 
-Solves the given model `m` with ϕ-divergence `d` using our new approach. 
+Solves model `m` with given ϕ-divergence or p-norm `d`. 
 """
-function solve(d::Divergence, m::Model; kwargs...)
-    p = zero(m.q)
-    p[m.Imax] .= m.q[m.Imax]
-    p ./= sum(m.q[m.Imax])
+function solve(d::Union{<:Divergence, <:Norm}, m::Model; kwargs...)
+    reset_stats(d)
+     p, t, bytes, gctime, memallocs = @timed optimal(d, m; kwargs...)
+     add_stats(t, bytes)
+
+    return p
+end
+
+
+# ----------------------------------------------------------------------------------------------------------
+# general solvers
+# ----------------------------------------------------------------------------------------------------------
+"""
+    generalsolve(d::Union{<:Divergence, <:Norm}, m::Model; kwargs...)
+
+Solves model `m` with given ϕ-divergence or p-norm `d`. 
+"""
+function generalsolve(d::Union{<:Divergence, <:Norm}, m::Model)
+    reset_stats(d)
+    p, t, bytes, gctime, memallocs = @timed generaloptimal(d, m)
+    add_stats(t, bytes)
+
+    return p
+end
+
+
+"""
+    generaloptimal(d::Divergence, m::Model)
+
+Solves the given model `m` with ϕ-divergence `d` using the Ipopt solver. 
+"""
+function generaloptimal(d::Divergence, m::Model)
+    stats.method = "Ipopt"
+
+    model = JuMP.Model(JuMP.with_optimizer(Ipopt.Optimizer, print_level = 0))
 
     ϕ = generate(d)
+    JuMP.register(model, :ϕ, 1, ϕ, autodiff = true)
 
-    if sum(m.q .* ϕ.(p ./ m.q)) <= m.ε
-      return p
-    else
-      return optimal(d, m; kwargs...)
-    end
-end
+    JuMP.@variable(model, p[1:length(m.q)] >= 0)
 
+    JuMP.@objective(model, Max, m.c'*p)
+    JuMP.@constraint(model, sum(p) == 1)
+    JuMP.@NLconstraint(model, sum(m.q[i]*ϕ(p[i]/m.q[i]) for i in eachindex(p)) <= m.ε)
 
-# ----------------------------------------------------------------------------------------------------------
-# p-norms
-# ----------------------------------------------------------------------------------------------------------
-"""
-    solve(d::Union{Linf, Lone}, m::Model; kwargs...) 
-
-Solves the given model `m` with l-infinity or l-1 norm  using our new approach.     
-"""
-function solve(d::Union{Linf, Lone}, m::Model; kwargs...)
-    return optimal(d, m)
+    JuMP.optimize!(model)
+    return JuMP.value.(p)
 end
 
 
 """
-    solve(d::Union{Linf, Lone, Philpott}, m::Model; kwargs...) 
+    generaloptimal(d::Norm, m::Model)
 
-Solves the given model `m` with l-2 norm using Philpott's algorithm.     
+Solves the given model `m` with norm `d` using the ECOS solver. 
 """
-function solve(d::Philpott, m::Model; kwargs...)
-    return optimal(d, m; kwargs...)
-end
+function generaloptimal(d::Norm, m::Model)
+    stats.method = "ECOS"
 
+    k = normtype(d)
+    p = Convex.Variable(length(m.q))
 
+    objective   = m.c'*p
+    constraints = [sum(p) == 1,
+                   p >= 0,
+                   Convex.norm(p - m.q, k) <= m.ε]
 
-"""
-    solve(d::Ltwo, m::Model; kwargs...)
-
-Solves the given model `m` with l-2 norm using our new approach. 
-"""
-function solve(d::Ltwo, m::Model; kwargs...)
-    Ilen = length(m.Imax)
-    Isum = sum(m.q[m.Imax])
-    p    = zero(m.q)
-    p[m.Imax] .= m.q[m.Imax] .+ 1/Ilen .- Isum/Ilen
-
-    if sum(abs2, p - m.q) <= m.ε^2
-      return p
-    else
-      return optimal(d, m; kwargs...)
-    end
+    problem = Convex.maximize(objective, constraints)
+    Convex.solve!(problem, ECOS.ECOSSolver(verbose = false), verbose = false)
+    return vec(p.value)
 end

@@ -2,11 +2,11 @@
 # our approach
 # ----------------------------------------------------------------------------------------------------------
 """
-    solve(d::Union{<:Divergence, <:Norm}, m::Model; kwargs...)
+    solve(d::Union{<:Divergence, <:Norm}, m::ModelDRO; kwargs...)
 
 Solves model `m` with given ϕ-divergence or p-norm `d`. 
 """
-function solve(d::Union{<:Divergence, <:Norm}, m::Model; kwargs...)
+function solve(d::Union{<:Divergence, <:Norm}, m::ModelDRO; kwargs...)
     reset_stats(d)
      p, t, bytes, gctime, memallocs = @timed optimal(d, m; kwargs...)
      add_stats(t, bytes)
@@ -19,11 +19,11 @@ end
 # general solvers
 # ----------------------------------------------------------------------------------------------------------
 """
-    generalsolve(d::Union{<:Divergence, <:Norm}, m::Model; kwargs...)
+    generalsolve(d::Union{<:Divergence, <:Norm}, m::ModelDRO; kwargs...)
 
 Solves model `m` with given ϕ-divergence or p-norm `d`. 
 """
-function generalsolve(d::Union{<:Divergence, <:Norm}, m::Model)
+function generalsolve(d::Union{<:Divergence, <:Norm}, m::ModelDRO)
     reset_stats(d)
     p, t, bytes, gctime, memallocs = @timed generaloptimal(d, m)
     add_stats(t, bytes)
@@ -33,11 +33,11 @@ end
 
 
 """
-    generaloptimal(d::Divergence, m::Model)
+    generaloptimal(d::Divergence, m::ModelDRO)
 
 Solves the given model `m` with ϕ-divergence `d` using the Ipopt solver. 
 """
-function generaloptimal(d::Divergence, m::Model)
+function generaloptimal(d::Divergence, m::ModelDRO)
     stats.method = "Ipopt"
 
     model = JuMP.Model(JuMP.with_optimizer(Ipopt.Optimizer, print_level = 0))
@@ -57,11 +57,11 @@ end
 
 
 """
-    generaloptimal(d::Norm, m::Model)
+    generaloptimal(d::Norm, m::ModelDRO)
 
 Solves the given model `m` with norm `d` using the ECOS solver. 
 """
-function generaloptimal(d::Norm, m::Model)
+function generaloptimal(d::Norm, m::ModelDRO)
     stats.method = "ECOS"
 
     k = normtype(d)

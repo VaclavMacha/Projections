@@ -34,11 +34,11 @@ normtype(d::Linf) = Inf
 
 
 """
-    optimal(d::Linf, m::Model; kwargs...)
+    optimal(d::Linf, m::ModelDRO; kwargs...)
 
 Returns the optimal solution of the DRO model 'm' with l-infinity norm. 
 """
-function optimal(d::Linf, m::Model)
+function optimal(d::Linf, m::ModelDRO)
     c      = .- m.c
     perm   = sortperm(c)
     c      = c[perm]
@@ -103,11 +103,11 @@ normtype(d::Lone) = 1
 
 
 """
-    optimal(d::Lone, m::Model)
+    optimal(d::Lone, m::ModelDRO)
 
 Returns the optimal solution of the DRO model 'm' with l-1 norm.
 """
-function optimal(d::Lone, m::Model; kwargs...)
+function optimal(d::Lone, m::ModelDRO; kwargs...)
     c    = .- m.c
     perm = sortperm(c)
     c    = c[perm]
@@ -170,11 +170,11 @@ normtype(d::Ltwo) = 2
 
 
 """
-    initial(d::Ltwo, m::Model)
+    initial(d::Ltwo, m::ModelDRO)
 
 Returns the initial point for finding the root of the function `h` using the newton method. 
 """
-function initial(d::Ltwo, m::Model)
+function initial(d::Ltwo, m::ModelDRO)
     f(μ)  = h(d, m, μ)
     μ     = 10
     f_val = f(μ)
@@ -191,7 +191,7 @@ function initial(d::Ltwo, m::Model)
 end
 
 
-function g(d::Ltwo, m::Model, μ::Real)
+function g(d::Ltwo, m::ModelDRO, μ::Real)
     n     = length(m.q)
     s     = sort(μ.*m.q .+ m.c)
     λ     = 0
@@ -213,12 +213,12 @@ function g(d::Ltwo, m::Model, μ::Real)
 end
 
 
-function h(d::Ltwo, m::Model, μ::Real; λ::Real = g(d, m, μ))
+function h(d::Ltwo, m::ModelDRO, μ::Real; λ::Real = g(d, m, μ))
     return sum((min.(λ .- m.c, μ .* m.q)).^2) - m.ε^2 * μ^2
 end
 
 
-function ∇h(d::Ltwo, m::Model, μ::Real; λ::Real = g(d, m, μ))
+function ∇h(d::Ltwo, m::ModelDRO, μ::Real; λ::Real = g(d, m, μ))
     q_i = @view m.q[λ .- m.c .>  μ .* m.q]
     c_i = @view m.c[λ .- m.c .<= μ .* m.q]
 
@@ -227,11 +227,11 @@ end
 
 
 """
-    optimal(d::Ltwo, m::Model; kwargs...) 
+    optimal(d::Ltwo, m::ModelDRO; kwargs...) 
 
 Returns the optimal solution of the DRO model 'm' with l-2 norm.
 """
-function optimal(d::Ltwo, m::Model; kwargs...)
+function optimal(d::Ltwo, m::ModelDRO; kwargs...)
     Ilen = length(m.Imax)
     Isum = sum(m.q[m.Imax])
     p    = zero(m.q)
@@ -275,11 +275,11 @@ normtype(d::Philpott) = 2
 
 
 """
-    optimal(d::Philpott, m::Model; atol::Real = 1e-10) 
+    optimal(d::Philpott, m::ModelDRO; atol::Real = 1e-10) 
 
 Returns the optimal solution given by Philpott's algorithm of the DRO model 'm' with l-2 norm.
 """
-function optimal(d::Philpott, m::Model; atol::Real = 1e-10, kwargs...)
+function optimal(d::Philpott, m::ModelDRO; atol::Real = 1e-10, kwargs...)
     n      = length(m.q)
     c_mean = Statistics.mean(m.c)
     c_std  = Statistics.stdm(m.c, c_mean; corrected = false)

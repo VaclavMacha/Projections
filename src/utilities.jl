@@ -12,9 +12,11 @@ stats = Stats("model", "method", 0, 0, 0)
 
 
 function reset_stats(d::Union{KullbackLeibler, Burg, Hellinger})
-    stats.model  = string(typeof(d).name)
-    stats.method = "bisection"
-    stats.evals  = 0
+    stats.model    = string(typeof(d).name)
+    stats.method   = "bisection"
+    stats.evals    = 0
+    stats.evaltime = 0
+    stats.bytes    = 0
 end
 
 

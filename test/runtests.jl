@@ -16,15 +16,15 @@ Test.@testset "All tests" begin
             c2  = max.(min.(rand(n), 0.8), 0.2)
 
             Test.@testset "standard" begin
-                m = Projections.Model(q, c1, ε)
+                m = Projections.ModelDRO(q, c1, ε)
                 test_model(m)
             end
             Test.@testset "sorted" begin
-                m = Projections.Model(sort(q; rev = true), sort(c1), ε)
+                m = Projections.ModelDRO(sort(q; rev = true), sort(c1), ε)
                 test_model(m) 
             end
             Test.@testset "bounds" begin
-                m = Projections.Model(q, c2, ε)
+                m = Projections.ModelDRO(q, c2, ε)
                 test_model(m)
             end
         end 

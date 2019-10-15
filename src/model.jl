@@ -1,5 +1,5 @@
 """
-    Model
+    ModelDRO
 
 A structure representing the DRO model.
 
@@ -11,7 +11,7 @@ Fields:
 - `cmax::Real`: maximum of the vector c
 - `Imax::Vector{Integer}`: set of indexes, which fulfill c[i] == cmax 
 """
-struct Model
+struct ModelDRO
     q::Vector
     c::Vector
     ε::Real
@@ -21,11 +21,11 @@ struct Model
 end
 
 """
-    Model(q::Vector{<:Real}, c::Vector{<:Real}, ε::Real)
+    ModelDRO(q::Vector{<:Real}, c::Vector{<:Real}, ε::Real)
 
-A constructor of the Model structure.
+A constructor of the ModelDRO structure.
 """
-function Model(q::Vector{<:Real}, c::Vector{<:Real}, ε::Real)
+function ModelDRO(q::Vector{<:Real}, c::Vector{<:Real}, ε::Real)
     cmin = minimum(c)
     cmax = maximum(c)
 
@@ -35,5 +35,5 @@ function Model(q::Vector{<:Real}, c::Vector{<:Real}, ε::Real)
     @assert cmin != cmax "The vector `c` must be non-constant."
     @assert ε > 0 "The parameter `ε` must be greater than 0." 
 
-    return Model(q, c, ε, cmin, cmax, findall(c .== cmax))
+    return ModelDRO(q, c, ε, cmin, cmax, findall(c .== cmax))
 end

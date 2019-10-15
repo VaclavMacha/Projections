@@ -29,7 +29,7 @@ function test_generate(; atol::Real = 1e-4)
 end
 
 
-function test_feasibility(d::Divergence, m::Model, p; atol::Real = 1e-6)
+function test_feasibility(d::Divergence, m::ModelDRO, p; atol::Real = 1e-6)
     ϕ = Projections.generate(d)
     Test.@testset "Feasibility" begin
         Test.@test isapprox(sum(p), 1; atol = atol)
@@ -40,7 +40,7 @@ function test_feasibility(d::Divergence, m::Model, p; atol::Real = 1e-6)
 end
 
 
-function test_feasibility(d::Norm, m::Model, p; atol::Real = 1e-6)
+function test_feasibility(d::Norm, m::ModelDRO, p; atol::Real = 1e-6)
     k = Projections.normtype(d)
     Test.@testset "Feasibility" begin
         Test.@test isapprox(sum(p), 1; atol = atol)
@@ -51,7 +51,7 @@ function test_feasibility(d::Norm, m::Model, p; atol::Real = 1e-6)
 end
 
 
-function isfeasible(d::Divergence, m::Model, p; atol::Real = 1e-6)
+function isfeasible(d::Divergence, m::ModelDRO, p; atol::Real = 1e-6)
     ϕ = Projections.generate(d)
     return all([isapprox(sum(p), 1; atol = atol),
                 sum(m.q.*ϕ.(p./m.q)) <= 1.01 * m.ε,
@@ -59,7 +59,7 @@ function isfeasible(d::Divergence, m::Model, p; atol::Real = 1e-6)
 end
 
 
-function isfeasible(d::Norm, m::Model, p; atol::Real = 1e-6)
+function isfeasible(d::Norm, m::ModelDRO, p; atol::Real = 1e-6)
     k = Projections.normtype(d)
     return all([isapprox(sum(p), 1; atol = atol),
                 LinearAlgebra.norm(p - m.q, k) <= 1.01 * m.ε,
@@ -67,7 +67,7 @@ function isfeasible(d::Norm, m::Model, p; atol::Real = 1e-6)
 end
 
 
-function test_optimality(d::Union{Divergence, Norm}, m::Model, p, psolver; atol = 1e-4)
+function test_optimality(d::Union{Divergence, Norm}, m::ModelDRO, p, psolver; atol = 1e-4)
     isfeasible(d, m, psolver; atol = atol) || return 
     
     Test.@testset "Optimality" begin
@@ -77,7 +77,7 @@ function test_optimality(d::Union{Divergence, Norm}, m::Model, p, psolver; atol 
 end
 
 
-function test_model(m::Model)
+function test_model(m::ModelDRO)
     Test.@testset "Comparison with the general solver" begin
         Test.@testset "$(Projections.name(d))" for d in methods()
             

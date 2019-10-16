@@ -38,7 +38,7 @@ end
 Solves the given model `m` with ϕ-divergence `d` using the Ipopt solver. 
 """
 function generaloptimal(d::Divergence, m::ModelDRO)
-    stats.method = "Ipopt"
+    stats.optimizer = "Ipopt"
 
     model = JuMP.Model(JuMP.with_optimizer(Ipopt.Optimizer, print_level = 0))
 
@@ -62,7 +62,7 @@ end
 Solves the given model `m` with norm `d` using the ECOS solver. 
 """
 function generaloptimal(d::Norm, m::ModelDRO)
-    stats.method = "ECOS"
+    stats.optimizer = "ECOS"
 
     k = normtype(d)
     p = Convex.Variable(length(m.q))

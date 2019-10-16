@@ -1,6 +1,6 @@
 module Projections
 
-import JuMP, Ipopt, Convex, ECOS, LinearAlgebra, Statistics
+import JuMP, Ipopt, Convex, ECOS, LinearAlgebra, Statistics, DataFrames
 
 export ModelDRO, solve, generalsolve 
 export Divergence, KullbackLeibler, Burg, Hellinger, ChiSquare, ModifiedChiSquare
@@ -12,5 +12,6 @@ include("norms.jl")
 include("utilities.jl")
 include("findroot.jl")
 include("solve.jl")
+include("benchmarks.jl")
 
 end # module

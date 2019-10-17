@@ -2,9 +2,16 @@ import Projections, Test, Distributions, LinearAlgebra
 
 include("tests.jl")
 
-divergences = [Projections.Burg(), Projections.Hellinger(), Projections.ChiSquare(),
-               Projections.ModifiedChiSquare(), Projections.KullbackLeibler()]
-norms       = [Projections.Linf(), Projections.Lone(), Projections.Ltwo()]
+divergences = [Projections.Burg(),
+               Projections.Hellinger(),
+               Projections.ChiSquare(),
+               Projections.ModifiedChiSquare(),
+               Projections.KullbackLeibler()]
+
+norms = [Projections.Linf(),
+         Projections.Lone(),
+         Projections.Ltwo()]
+         
 constraints = vcat(divergences, norms)        
 
 n  = 100

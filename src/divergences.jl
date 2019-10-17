@@ -1,12 +1,4 @@
-"""
-    Divergence
-
-An abstract type covering all ϕ-divergence.
-"""
-abstract type Divergence end
-
-
-function optimal_simple(d::Divergence, m::ModelDRO)
+function optimal_simple(d::Divergence, m::DRO)
     p = zero(m.q)
     p[m.Imax] .= m.q[m.Imax]
     return p./sum(m.q[m.Imax])
@@ -42,14 +34,14 @@ name(d::KullbackLeibler) = "Kullback-Leibler divergence"
 
 
 """
-    bounds(d::KullbackLeibler, m::ModelDRO)
+    bounds(d::KullbackLeibler, m::DRO)
 
 Returns lower and upper bound for finding the root of the function `h` using the bisection method. 
 """
-bounds(d::KullbackLeibler, m::ModelDRO) = (0, (m.cmax - m.cmin)/m.ε)
+bounds(d::KullbackLeibler, m::DRO) = (0, (m.cmax - m.cmin)/m.ε)
 
 
-function h(d::KullbackLeibler, m::ModelDRO, λ::Real)
+function h(d::KullbackLeibler, m::DRO, λ::Real)
     p_hat = m.q.*exp.(m.c./λ)
     val   = p_hat' * (m.c./λ .- log(sum(p_hat)) .- m.ε)
     return isnan(val) || val == - typemax(val) ? typemax(val) : val
@@ -57,11 +49,11 @@ end
 
 
 """
-    function optimal(d::KullbackLeibler, m::ModelDRO; kwargs...)  
+    function optimal(s::Sadda, d::KullbackLeibler, m::DRO; kwargs...)  
 
 Returns the optimal solution of the DRO model 'm' with Kullback-Leibler divergence.
 """
-function optimal(d::KullbackLeibler, m::ModelDRO; kwargs...) 
+function optimal(s::Sadda, d::KullbackLeibler, m::DRO; kwargs...) 
     p = optimal_simple(d, m)
     ϕ = generate(d)
 
@@ -103,25 +95,25 @@ name(d::Burg) = "Burg entropy"
 
 
 """
-    bounds(d::Burg, m::ModelDRO)
+    bounds(d::Burg, m::DRO)
 
 Returns lower and upper bound for finding the root of the function `h` using the bisection method. 
 """
-bounds(d::Burg, m::ModelDRO) = (m.cmax, m.cmax + (m.cmax - m.cmin)/m.ε)
+bounds(d::Burg, m::DRO) = (m.cmax, m.cmax + (m.cmax - m.cmin)/m.ε)
 
 
-function h(d::Burg, m::ModelDRO, λ::Real)
+function h(d::Burg, m::DRO, λ::Real)
     val = sum(m.q.*log.(λ .- m.c)) + log(sum(m.q./(λ .- m.c))) - m.ε
     return isnan(val) ? typemax(val) : val
 end
 
 
 """
-    function optimal(d::Burg, m::ModelDRO; kwargs...)  
+    function optimal(s::Sadda, d::Burg, m::DRO; kwargs...)  
 
 Returns the optimal solution of the DRO model 'm' with Burg entropy.
 """
-function optimal(d::Burg, m::ModelDRO; kwargs...) 
+function optimal(s::Sadda, d::Burg, m::DRO; kwargs...) 
     p = optimal_simple(d, m)
     ϕ = generate(d)
 
@@ -163,25 +155,25 @@ name(d::Hellinger) = "Hellinger distance"
 
 
 """
-    bounds(d::Hellinger, m::ModelDRO)
+    bounds(d::Hellinger, m::DRO)
 
 Returns lower and upper bound for finding the root of the function `h` using the bisection method. 
 """
-bounds(d::Hellinger, m::ModelDRO) = (m.cmax, m.cmax + (2 - m.ε)*(m.cmax - m.cmin)/m.ε)
+bounds(d::Hellinger, m::DRO) = (m.cmax, m.cmax + (2 - m.ε)*(m.cmax - m.cmin)/m.ε)
 
 
-function h(d::Hellinger, m::ModelDRO, λ::Real)
+function h(d::Hellinger, m::DRO, λ::Real)
     val =  2*sum(m.q./(λ .- m.c)) - (2 - m.ε)*sqrt(sum(m.q./((λ .- m.c).^2)))
     return isnan(val) ? - typemax(val) : val
 end
 
 
 """
-    function optimal(d::Hellinger, m::ModelDRO; kwargs...)  
+    function optimal(s::Sadda, d::Hellinger, m::DRO; kwargs...)  
 
 Returns the optimal solution of the DRO model 'm' with Hellinger distance.
 """
-function optimal(d::Hellinger, m::ModelDRO; kwargs...) 
+function optimal(s::Sadda, d::Hellinger, m::DRO; kwargs...) 
     p = optimal_simple(d, m)
     ϕ = generate(d)
 
@@ -223,11 +215,11 @@ name(d::ChiSquare) = "χ²-distance"
 
 
 """
-    initial(d::ChiSquare, m::ModelDRO)
+    initial(d::ChiSquare, m::DRO)
 
 Returns the initial point for finding the root of the function `h` using the newton method. 
 """
-function initial(d::ChiSquare, m::ModelDRO)
+function initial(d::ChiSquare, m::DRO)
     f(μ)  = h(d, m, μ)
     λ_min = m.cmax
     q     = 0.01
@@ -245,24 +237,24 @@ function initial(d::ChiSquare, m::ModelDRO)
 end
 
 
-function h(d::ChiSquare, m::ModelDRO, λ::Real)
+function h(d::ChiSquare, m::DRO, λ::Real)
     val = sum(m.q .* sqrt.(λ .- m.c))*sum(m.q./sqrt.(λ .- m.c)) - 1 - m.ε
     return isnan(val) ? - typemax(val) : val
 end
 
 
-function ∇h(d::ChiSquare, m::ModelDRO, λ::Real)
+function ∇h(d::ChiSquare, m::DRO, λ::Real)
     λc = λ .- m.c
     return (sum(m.q ./ sqrt.(λc))^2 - sum(m.q .* sqrt.(λc))*sum(m.q ./ (λc.^(3/2))))/2
 end
 
 
 """
-    function optimal(d::ChiSquare, m::ModelDRO; kwargs...)  
+    function optimal(s::Sadda, d::ChiSquare, m::DRO; kwargs...)  
 
 Returns the optimal solution of the DRO model 'm' with χ²-distance.
 """
-function optimal(d::ChiSquare, m::ModelDRO; kwargs...) 
+function optimal(s::Sadda, d::ChiSquare, m::DRO; kwargs...) 
     p = optimal_simple(d, m)
     ϕ = generate(d)
 
@@ -304,11 +296,11 @@ name(d::ModifiedChiSquare) = "Modified χ²-distance"
 
 
 """
-    initial(d::ModifiedChiSquare, m::ModelDRO)
+    initial(d::ModifiedChiSquare, m::DRO)
 
 Returns the initial point for finding the root of the function `h` using the newton method. 
 """
-function initial(d::ModifiedChiSquare, m::ModelDRO)
+function initial(d::ModifiedChiSquare, m::DRO)
     f(λ)  = h(d, m, λ)
     λ     = - m.cmax + 10
     f_val = f(λ)
@@ -325,24 +317,24 @@ function initial(d::ModifiedChiSquare, m::ModelDRO)
 end
 
 
-function h(d::ModifiedChiSquare, m::ModelDRO, λ::Real)
+function h(d::ModifiedChiSquare, m::DRO, λ::Real)
     val = sum(m.q .* max.(λ .+ m.c, 0).^2) - (1 + m.ε) * (sum(m.q .* max.(λ .+ m.c, 0)))^2
     return isnan(val) ? - typemax(val) : val
 end
 
 
-function ∇h(d::ModifiedChiSquare, m::ModelDRO, λ::Real)
+function ∇h(d::ModifiedChiSquare, m::DRO, λ::Real)
     I = findall(λ .+ m.c .>= 0) 
     return 2 * sum(m.q[I] .* (λ .+ m.c[I])) * (1 - (1 + m.ε) * sum(m.q[I]))
 end
 
 
 """
-    function optimal(d::ModifiedChiSquare, m::ModelDRO; kwargs...)  
+    function optimal(s::Sadda, d::ModifiedChiSquare, m::DRO; kwargs...)  
 
 Returns the optimal solution of the DRO model 'm' with modified χ²-distance.
 """
-function optimal(d::ModifiedChiSquare, m::ModelDRO; kwargs...)
+function optimal(s::Sadda, d::ModifiedChiSquare, m::DRO; kwargs...)
     p = optimal_simple(d, m)
     ϕ = generate(d)
 

@@ -1,6 +1,7 @@
 mutable struct Stats
     model::String
     constraint::String
+    solver::String
     optimizer::String
     evals::Int
     evaltime::Real
@@ -9,36 +10,18 @@ end
  
 
 local stats
-stats = Stats("model", "constraint", "optimizer", 0, 0, 0)
+stats = Stats("model", "constraint", "solver", "optimizer", 0, 0, 0)
 
 
-function reset_stats(d::Union{KullbackLeibler, Burg, Hellinger})
+function reset_stats(s::Solver, m::DRO)
     stats.model      = "DRO"
-    stats.constraint = string(typeof(d).name)
-    stats.optimizer  = "bisection"
-    stats.evals      = 0
-    stats.evaltime   = 0
-    stats.bytes      = 0
-end
-
-
-function reset_stats(d::Union{ChiSquare, ModifiedChiSquare, Ltwo})
-    stats.model      = "DRO"
-    stats.constraint = string(typeof(d).name)
-    stats.optimizer  = "newton"
-    stats.evals      = 0
-    stats.evaltime   = 0
-    stats.bytes      = 0
-end
-
-
-function reset_stats(d::Union{Linf, Lone, Philpott})
-    stats.model      = "DRO"
-    stats.constraint = string(typeof(d).name)
+    stats.constraint = string(typeof(m.d).name)
+    stats.solver     = string(typeof(s).name)
     stats.optimizer  = "none"
     stats.evals      = 0
     stats.evaltime   = 0
     stats.bytes      = 0
+    return 
 end
 
 

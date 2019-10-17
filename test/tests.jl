@@ -1,74 +1,45 @@
-function divergences()
-    return [Burg(),
-            Hellinger(),
-            ChiSquare(),
-            ModifiedChiSquare(),
-            KullbackLeibler()]
+function test_generate(d::Projections.Divergence; atol::Real = 1e-4)
+    Test.@testset "$(Projections.name(d))" begin
+        ϕ = Projections.generate(d)
+        Test.@test isapprox(ϕ(1), 0; atol = atol)
+    end
+    return
 end
 
 
-function norms()
-    return [Linf(),
-            Lone(),
-            Ltwo(),
-            Philpott()]
-end
-
-
-methods() = vcat(divergences(), norms())
-
-
-function test_generate(; atol::Real = 1e-4)
-    Test.@testset "Test of generating functions" begin
-        Test.@testset "$(Projections.name(d))" for d in divergences()
-            ϕ = Projections.generate(d)
-            Test.@test isapprox(ϕ(1), 0; atol = atol)
+function test_feasibility(m::Projections.DRO, p; atol::Real = 1e-6)
+    Test.@testset "Feasibility" begin
+        Test.@test isapprox(sum(p), 1; atol = atol)
+        Test.@test minimum(p) >= - atol
+        if typeof(m.d) <: Projections.Divergence
+            ϕ     = Projections.generate(m.d)
+            Test.@test sum(m.q .* ϕ.(p ./ m.q)) <= 1.01 * m.ε
+        else
+            k     = Projections.normtype(m.d)
+            Test.@test LinearAlgebra.norm(p - m.q, k) <= 1.01 * m.ε
         end
     end
     return
 end
 
 
-function test_feasibility(d::Divergence, m::ModelDRO, p; atol::Real = 1e-6)
-    ϕ = Projections.generate(d)
-    Test.@testset "Feasibility" begin
-        Test.@test isapprox(sum(p), 1; atol = atol)
-        Test.@test sum(m.q .* ϕ.(p ./ m.q)) <= 1.01 * m.ε
-        Test.@test minimum(p) >= - atol
+function isfeasible(m::Projections.DRO, p; atol::Real = 1e-6)
+
+    cond1 = isapprox(sum(p), 1; atol = atol)
+    cond2 = minimum(p) >= - atol
+    if typeof(m.d) <: Projections.Divergence
+        ϕ     = Projections.generate(m.d)
+        cond3 = sum(m.q.*ϕ.(p./m.q)) <= 1.01 * m.ε
+    else
+        k     = Projections.normtype(m.d)
+        cond3 = LinearAlgebra.norm(p - m.q, k) <= 1.01 * m.ε
     end
-    return
+    return all([cond1, cond2, cond3])
 end
 
 
-function test_feasibility(d::Norm, m::ModelDRO, p; atol::Real = 1e-6)
-    k = Projections.normtype(d)
-    Test.@testset "Feasibility" begin
-        Test.@test isapprox(sum(p), 1; atol = atol)
-        Test.@test LinearAlgebra.norm(p - m.q, k) <= 1.01 * m.ε
-        Test.@test minimum(p) >= - atol
-    end
-    return
-end
-
-
-function isfeasible(d::Divergence, m::ModelDRO, p; atol::Real = 1e-6)
-    ϕ = Projections.generate(d)
-    return all([isapprox(sum(p), 1; atol = atol),
-                sum(m.q.*ϕ.(p./m.q)) <= 1.01 * m.ε,
-                minimum(p) >= - atol])
-end
-
-
-function isfeasible(d::Norm, m::ModelDRO, p; atol::Real = 1e-6)
-    k = Projections.normtype(d)
-    return all([isapprox(sum(p), 1; atol = atol),
-                LinearAlgebra.norm(p - m.q, k) <= 1.01 * m.ε,
-                minimum(p) >= - atol])
-end
-
-
-function test_optimality(d::Union{Divergence, Norm}, m::ModelDRO, p, psolver; atol = 1e-4)
-    isfeasible(d, m, psolver; atol = atol) || return 
+function test_optimality(m::Projections.DRO, p, psolver; atol = 1e-4)
+    isfeasible(m, psolver; atol = atol) || return 
     
     Test.@testset "Optimality" begin
         Test.@test m.c'*p >= m.c'*psolver - atol
@@ -77,15 +48,19 @@ function test_optimality(d::Union{Divergence, Norm}, m::ModelDRO, p, psolver; at
 end
 
 
-function test_model(m::ModelDRO)
-    Test.@testset "Comparison with the general solver" begin
-        Test.@testset "$(Projections.name(d))" for d in methods()
-            
-            p       = solve(d,m);
-            psolver = generalsolve(d,m);
+function test_model(m::Projections.DRO)
+    Test.@testset "Comparison with the general solver" begin 
+        p       = Projections.solve(Projections.Sadda(), m);
+        psolver = Projections.solve(Projections.General(), m);
 
-            test_feasibility(d, m, p; atol = 1e-6)
-            test_optimality(d, m, p, psolver; atol = 1e-4)
+        test_feasibility(m, p; atol = 1e-6)
+        test_optimality(m, p, psolver; atol = 1e-4)
+
+        if typeof(m.d) <: Projections.Ltwo
+            p = Projections.solve(Projections.Philpott(), m);
+
+            test_feasibility(m, p; atol = 1e-6)
+            test_optimality(m, p, psolver; atol = 1e-4)
         end
     end
     return

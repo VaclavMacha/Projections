@@ -22,7 +22,7 @@ struct KullbackLeibler <: Divergence end
 Returns the generating function `ϕ(t) = t⋅log(t)` of the Kullback-Leibler divergence.
 The generating function for `t == 0` is defined as `0`.
 """
-generate(d::KullbackLeibler) = ϕ(t) = t <= 0 ? zero(t) : t*log(t)
+generate(d::KullbackLeibler) = ϕ(t) = iszero(t) ? zero(t) : t*log(t)
 
 
 """
@@ -83,7 +83,7 @@ struct Burg <: Divergence end
 
 Returns the generating function `ϕ(t) = - log(t)` of the Burg entropy.
 """
-generate(d::Burg) = ϕ(t) = - log(max(t,0))
+generate(d::Burg) = ϕ(t) = - log(t)
 
 
 """
@@ -143,7 +143,7 @@ struct Hellinger <: Divergence end
 
 Returns the generating function `ϕ(t) = (√t - 1)²`  of the Hellinger distance.
 """
-generate(d::Hellinger) = ϕ(t) = (sqrt(max(t,0)) - 1)^2
+generate(d::Hellinger) = ϕ(t) = (sqrt(t) - 1)^2
 
 
 """

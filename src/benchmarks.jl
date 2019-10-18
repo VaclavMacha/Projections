@@ -27,7 +27,7 @@ function benchmark(s::Solver, m::Model; maxevals::Int = 10, verbose::Bool = true
 end
 
 
-function benchmark(s::Solver, getmodel::Function, N::Vector{<:Int}; maxevals::Int = 10, verbose::Bool = true)
+function benchmark(s::Solver, getmodel::Function, N::AbstractVector{<:Int}; maxevals::Int = 10, verbose::Bool = true)
     m = getmodel(10)
     verbose && printstyled(getinfo(s, m); bold = true, color = :green)
     solve(s, m)

@@ -23,20 +23,65 @@ end
 
 
 """
-    optimal(s::General, d::Norm, m::DRO)
+    optimal(s::General, d::Linf, m::DRO)
 
-Solves the given model `m` with norm `d` using the ECOS solver. 
+Solves the given model `m` with l-infinity norm `d` using the CPLEX solver. 
 """
-function optimal(s::General, d::Norm, m::DRO)
+function optimal(s::General, d::Linf, m::DRO)
+    stats.optimizer = "CPLEX"
+
+    model = JuMP.Model(JuMP.with_optimizer(CPLEX.Optimizer, CPX_PARAM_SCRIND=0))
+
+    JuMP.@variable(model, p[1:length(m.q)] >= 0)
+    JuMP.@variable(model, p_max >= 0)
+    JuMP.@constraint(model, p_max .>= p - m.q)
+    JuMP.@constraint(model, p_max .>= - p + m.q)
+    JuMP.@constraint(model, sum(p) == 1)
+    JuMP.@constraint(model, p_max <= m.ε)
+    JuMP.@objective(model, Max, m.c'*p)
+
+    JuMP.optimize!(model)
+    return JuMP.value.(p)
+end
+
+
+"""
+    optimal(s::General, d::Lone, m::DRO)
+
+Solves the given model `m` with l-1 norm `d` using the CPLEX solver. 
+"""
+function optimal(s::General, d::Lone, m::DRO)
+    stats.optimizer = "CPLEX"
+
+    model = JuMP.Model(JuMP.with_optimizer(CPLEX.Optimizer, CPX_PARAM_SCRIND=0))
+
+    JuMP.@variable(model, p[1:length(m.q)] >= 0)
+    JuMP.@variable(model, p_abs[1:length(m.q)] >= 0)
+    JuMP.@constraint(model, p_abs .>= p - m.q)
+    JuMP.@constraint(model, p_abs .>= - p + m.q)
+    JuMP.@constraint(model, sum(p) == 1)
+    JuMP.@constraint(model, sum(p_abs) <= m.ε)
+    JuMP.@objective(model, Max, m.c'*p)
+
+    JuMP.optimize!(model)
+    return JuMP.value.(p)
+end
+
+
+"""
+    optimal(s::General, d::Ltwo, m::DRO)
+
+Solves the given model `m` with l-2 norm `d` using the ECOS solver. 
+"""
+function optimal(s::General, d::Ltwo, m::DRO)
     stats.optimizer = "ECOS"
 
-    k = normtype(d)
     p = Convex.Variable(length(m.q))
 
     objective   = m.c'*p
     constraints = [sum(p) == 1,
                    p >= 0,
-                   Convex.norm(p - m.q, k) <= m.ε]
+                   Convex.norm(p - m.q, 2) <= m.ε]
 
     problem = Convex.maximize(objective, constraints)
     Convex.solve!(problem, ECOS.ECOSSolver(verbose = false), verbose = false)

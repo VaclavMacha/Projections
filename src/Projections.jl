@@ -1,6 +1,8 @@
 module Projections
 
-import JuMP, Ipopt, Convex, ECOS, LinearAlgebra, Statistics, DataFrames, ProgressMeter
+import LinearAlgebra, Statistics, DataFrames, ProgressMeter
+import JuMP, Ipopt, CPLEX
+import Convex, ECOS
 
 export DRO, solve
 export Solver, Sadda, General, Philpott

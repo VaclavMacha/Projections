@@ -22,7 +22,7 @@ struct KullbackLeibler <: Divergence end
 Returns the generating function `ϕ(t) = t⋅log(t)` of the Kullback-Leibler divergence.
 The generating function for `t == 0` is defined as `0`.
 """
-generate(d::KullbackLeibler) = ϕ(t) = iszero(t) ? zero(t) : t*log(t)
+generate(d::KullbackLeibler) = ϕ(t) = t <= 0 ? zero(t) : t*log(t)
 
 
 """

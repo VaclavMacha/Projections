@@ -50,7 +50,7 @@ Test.@testset "All tests" begin
 
     Test.@testset "Simplex" begin
         q  = rand(n)
-        a  = rand(n);
+        a  = rand(n)
         b  = 1 .+ rand(n)
         lb = rand(n)./n
         ub = 1 .+ rand(n)

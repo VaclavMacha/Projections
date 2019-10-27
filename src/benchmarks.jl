@@ -2,6 +2,11 @@ function getinfo(s::Solver, m::DRO)
     return "Benchmark of the $(typeof(s).name) solver for the $(typeof(m).name) model with $(name(m.d)) \n"
 end
 
+function getinfo(s::Solver, m::Simplex)
+    return "Benchmark of the $(typeof(s).name) solver for the $(typeof(m).name) model \n"
+end
+
+
 
 function statstodataframe(stats::Stats)
     fields = fieldnames(Stats)

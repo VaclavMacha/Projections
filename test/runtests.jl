@@ -19,8 +19,10 @@ n  = 100
 
 Test.@testset "All tests" begin
 
-    Test.@testset "Test of generating functions" for d in divergences
-        test_generate(d)
+    Test.@testset "Generating functions" begin 
+        Test.@testset "$(typeof(d))" for d in divergences
+            test_generate(d)
+        end
     end 
 
     Test.@testset "DRO" begin
@@ -45,5 +47,23 @@ Test.@testset "All tests" begin
             end
         end 
     end
-end
 
+    Test.@testset "Simplex" begin
+        q  = rand(n)
+        a  = rand(n);
+        b  = 1 .+ rand(n)
+        lb = rand(n)./n
+        ub = 1 .+ rand(n)
+        C1 = a'*(0.9*lb + 0.1*ub)
+        C2 = b'*(0.9*lb + 0.1*ub)
+
+        Test.@testset "Simplex 1" begin
+            m = Projections.Simplex1(q, lb, ub)
+            test_model(m)
+        end
+        Test.@testset "Simplex 2" begin
+            m = Projections.Simplex2(q, lb, ub, a, b, C1, C2)
+            test_model(m) 
+        end
+    end
+end

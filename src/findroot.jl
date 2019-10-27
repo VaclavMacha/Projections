@@ -67,15 +67,39 @@ end
 
 
 """
-    bisection(d::Union{KullbackLeibler, Burg, Hellinger}, m::DRO; maxiter::Integer = 1000, atol::Real = 1e-8)
+    bisection(d::Union{KullbackLeibler, Burg, Hellinger}, m::DRO; kwargs...)
 
 A simple bisection method for finding the root of the function `h` for the DRO problem with
 Kullback-Leibler divergence, Burg entropy or Hellinger distance.
 """
-function bisection(d::Union{KullbackLeibler, Burg, Hellinger}, m::DRO; maxiter::Integer = 1000, atol::Real = 1e-8)
-    stats.optimizer  = "bisection"
+function bisection(d::Union{KullbackLeibler, Burg, Hellinger}, m::DRO; kwargs...)
     f(μ) = h(d, m, μ)
     a, b = bounds(d,m)
+
+    return bisection(f, a, b; kwargs...)
+end
+
+
+"""
+    bisection(m::Simplex; kwargs...)
+
+A simple bisection method for finding the root of the function `h` for the Simplex problems.
+"""
+function bisection(m::Simplex; kwargs...)
+    f(μ) = h(m, μ)
+    a, b = bounds(m)
+
+    return bisection(f, a, b; kwargs...)
+end
+
+
+"""
+    bisection(f::Function, a::Real, b::Real; maxiter::Integer = 1000, atol::Real = 1e-8)
+
+A simple bisection method for finding the root of the function `f`.
+"""
+function bisection(f::Function, a::Real, b::Real; maxiter::Integer = 1000, atol::Real = 1e-8)
+    stats.optimizer  = "bisection"
     local c
 
     f_a = f(a)
@@ -101,7 +125,7 @@ function bisection(d::Union{KullbackLeibler, Burg, Hellinger}, m::DRO; maxiter::
             b = c
         end
     end
-   @warn "Bisection method for the DRO model with $(name(d)) reached maximal
-           number of iteration. The solution may not be accurate: h(μ) = $(f(c))"
+   @warn "Bisection method reached maximal number of iteration.
+          The solution may not be accurate: h(μ) = $(f(c))"
     return c
 end

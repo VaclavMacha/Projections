@@ -177,3 +177,44 @@ function optimal(s::General, d::Ltwo, m::DRO)
     JuMP.optimize!(model)
     return JuMP.value.(p)
 end
+
+
+"""
+    optimal(s::General, m::Simplex1)
+
+Solves the Simplex1 model using the CPLEX solver. 
+"""
+function optimal(s::General, m::Simplex1)
+    stats.optimizer = "CPLEX"
+
+    model = JuMP.Model(JuMP.with_optimizer(CPLEX.Optimizer, CPX_PARAM_SCRIND=0))
+
+    JuMP.@variable(model, m.lb[i] <= p[i = 1:length(m.q)] <= m.ub[i])
+    
+    JuMP.@objective(model, Min, sum(0.5 * (p[i] - m.q[i])^2 for i in eachindex(p)))
+    JuMP.@constraint(model, sum(p) == 1)
+
+    JuMP.optimize!(model)
+    return JuMP.value.(p)
+end
+
+
+"""
+    optimal(s::General, m::Simplex2)
+
+Solves the Simplex2 model using the CPLEX solver. 
+"""
+function optimal(s::General, m::Simplex2)
+    stats.optimizer = "CPLEX"
+
+    model = JuMP.Model(JuMP.with_optimizer(CPLEX.Optimizer, CPX_PARAM_SCRIND=0))
+
+    JuMP.@variable(model, m.lb[i] <= p[i = 1:length(m.q)] <= m.ub[i])
+    
+    JuMP.@objective(model, Min, sum(0.5 * (p[i] - m.q[i])^2 for i in eachindex(p)))
+    JuMP.@constraint(model, m.a' * p == m.C1)
+    JuMP.@constraint(model, m.b' * p == m.C2)
+
+    JuMP.optimize!(model)
+    return JuMP.value.(p)
+end

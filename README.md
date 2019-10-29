@@ -12,15 +12,9 @@ This package can be installed using pkg REPL as follows
 
 # Usage
 
-## DRO
+This package provides an interface to solve the three following problems
 
-This package provides an interface to solve distributionally robust optimization (DRO) with φ -divergence or norm in constraints.  The interface provides 3 solvers: 
-
-1. `Sadda()` - our approach how to solve DRO
-2. `General()` - general purpose solvers such as [Ipopt](https://github.com/coin-or/Ipopt) or [CPLEX](https://www.ibm.com/products/ilog-cplex-optimization-studio)
-3. `Philpott()` - algorithm presented in [[Philpott 2018]](https://link.springer.com/article/10.1007/s10287-018-0314-0) for the DRO with l-2 norm
-
-All implemented φ -divergences and norms are presented in the following table.
+1. distributionally robust optimization (DRO) with φ -divergence or norm in constraints. All implemented φ -divergences and norms are presented in the following table
 
 | Name                          | Constructor           | Sadda solver | General solver | Philpott solver |
 | ---                           | :---:                 | :---:        | :---:          | :---:           |
@@ -33,8 +27,21 @@ All implemented φ -divergences and norms are presented in the following table.
 | *l-2 norm*                    | `Ltwo()`              | ✔            | CPLEX          | ✘               |
 | *l-infinity norm*             | `Linf()`              | ✔            | CPLEX          | ✔               |
 
+2. finding projection onto probability simplex (Simplex1),
+3. finding projection onto simplex with additional linear equality (Simplex2).
 
-The following example shows how to solve the DRO with Burg distance using `Sadda()` solver
+The interface provides 3 solvers: 
+
+1. `Sadda()` - our approach how to solve DRO
+2. `General()` - general purpose solvers such as [Ipopt](https://github.com/coin-or/Ipopt) or [CPLEX](https://www.ibm.com/products/ilog-cplex-optimization-studio)
+3. `Philpott()` - algorithm presented in [[Philpott 2018]](https://link.springer.com/article/10.1007/s10287-018-0314-0) for the DRO with l-2 norm
+
+## DRO
+
+
+
+
+The following example shows how to solve the DRO with Burg distance using `Sadda()` and `General()` solver
 ```julia
 julia> using Projections, Random, LinearAlgebra                                                                                           
                                                                                                                                           
@@ -58,4 +65,64 @@ julia> p2 = Projections.solve(General(), model);
 
 julia> LinearAlgebra.norm(p1 - p2)                                                                                                        
 7.848203730531935e-9
+```
+
+## Simplex1
+
+The following example shows how to solve the Simplex1 problem using `Sadda()` and `General()` solver
+```julia
+julia> using Projections, Random, LinearAlgebra                                                                                      
+
+julia> Random.seed!(1234);                                                                                                           
+
+julia> n  = 10;                                                                                                                      
+
+julia> q  = rand(n);                                                                                                                 
+
+julia> lb = rand(n)./n;                                                                                                              
+
+julia> ub = 1 .+ rand(n);                                                                                                            
+
+julia> model  = Projections.Simplex1(q, lb, ub);                                                                                     
+
+julia> p1 = Projections.solve(Sadda(), model);                                                                                       
+
+julia> p2 = Projections.solve(General(), model);                                                                                     
+
+julia> LinearAlgebra.norm(p1 - p2)                                                                                                   
+2.9749633079816928e-8
+```
+
+## Simplex2
+
+The following example shows how to solve the Simplex2 problem using `Sadda()` and `General()` solver
+```julia
+julia> using Projections, Random, LinearAlgebra                                                                                      
+
+julia> Random.seed!(1234);                                                                                                           
+
+julia> n  = 10;                                                                                                                      
+
+julia> q  = rand(n);                                                                                                                 
+
+julia> a  = rand(n);                                                                                                                 
+
+julia> b  = 1 .+ rand(n);                                                                                                            
+
+julia> lb = rand(n)./n;                                                                                                              
+
+julia> ub = 1 .+ rand(n);                                                                                                            
+
+julia> C1 = a'*(0.9*lb + 0.1*ub);                                                                                                    
+
+julia> C2 = b'*(0.9*lb + 0.1*ub);                                                                                                    
+
+julia> model  = Projections.Simplex2(q, lb, ub, a, b, C1, C2);                                                                       
+
+julia> p1 = Projections.solve(Sadda(), model);                                                                                       
+
+julia> p2 = Projections.solve(General(), model);                                                                                     
+
+julia> LinearAlgebra.norm(p1 - p2)
+2.4382067500158808e-8
 ```

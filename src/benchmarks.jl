@@ -35,7 +35,9 @@ end
 function benchmark(s::Solver, getmodel::Function, N::AbstractVector{<:Int}; maxevals::Int = 10, verbose::Bool = true)
     m = getmodel(10)
     verbose && printstyled(getinfo(s, m); bold = true, color = :green)
-    solve(s, m)
+    
+    ## Compiling ...
+    benchmark(s, m; maxevals = 10, verbose = false)
 
     progress = ProgressMeter.Progress(length(N), 0.1)
 

@@ -1,4 +1,7 @@
-function get_DRO(n::Int, d::Projections.Constraint, ε::Real = 0.1; seed::Int = 1234)
+# ----------------------------------------------------------------------------------------------------------
+# Model generation
+# ----------------------------------------------------------------------------------------------------------
+function model_DRO(n::Int, d::Projections.Constraint, ε::Real = 0.1; seed::Int = 1234)
     Random.seed!(seed);    
 
     q = LinearAlgebra.normalize(rand(Distributions.Uniform(0,1), n), 1)
@@ -7,7 +10,7 @@ function get_DRO(n::Int, d::Projections.Constraint, ε::Real = 0.1; seed::Int = 
 end
 
 
-function get_Simplex1(n::Int; seed::Int = 1234)
+function model_Simplex1(n::Int; seed::Int = 1234)
     Random.seed!(seed);    
 
     q  = rand(n)
@@ -17,7 +20,7 @@ function get_Simplex1(n::Int; seed::Int = 1234)
 end
 
 
-function get_Simplex2(n::Int; seed::Int = 1234)
+function model_Simplex2(n::Int; seed::Int = 1234)
     Random.seed!(seed);    
 
     q  = rand(n)
@@ -31,6 +34,115 @@ function get_Simplex2(n::Int; seed::Int = 1234)
 end
 
 
+# ----------------------------------------------------------------------------------------------------------
+# Benchmark evaluation
+# ----------------------------------------------------------------------------------------------------------
+function eval_Divergences(solver::Solver, N; kwargs...)
+    divergences = [KullbackLeibler(), Hellinger(), Burg(), ChiSquare(), ModifiedChiSquare()]
+
+    return  mapreduce((d) -> eval_DRO(solver, d, N; kwargs...), vcat, divergences)
+end
+
+
+function eval_Norms(solver::Solver, N; kwargs...)
+    norms = [Linf(), Lone(), Ltwo()]
+
+    return  mapreduce((d) -> eval_DRO(solver, d, N; kwargs...), vcat, norms)
+end
+
+
+function eval_DRO(solver::Solver, d, N; kwargs...)
+    return  Projections.benchmark(solver, (n) -> model_DRO(n, d), N; kwargs...)
+end
+
+
+function eval_Simplex1(solver::Solver, N; kwargs...)
+    return Projections.benchmark(solver, model_Simplex1, N; kwargs...)
+end
+
+
+function eval_Simplex2(solver::Solver, N; kwargs...)
+    return Projections.benchmark(solver, model_Simplex2, N; kwargs...) 
+end
+
+
+# ----------------------------------------------------------------------------------------------------------
+# Tables
+# ----------------------------------------------------------------------------------------------------------
+function tableformat(metric::Symbol)
+    colnames = [:dimension, :dimension_small]
+    for problem in [:KullbackLeibler, :Hellinger, :Burg, :ChiSquare, :ModifiedChiSquare]
+        push!(colnames, Symbol(problem, "_Sadda"))
+        metric in [:evals_mean, :evals_std] || push!(colnames, Symbol(problem, "_General"))
+    end
+
+    if metric in [:evals_mean, :evals_std] 
+        push!(colnames, :Ltwo_Sadda)
+        push!(colnames, :Simplex2_Sadda)
+    else
+        for problem in [:Linf, :Lone, :Ltwo, :Simplex1, :Simplex2]
+            push!(colnames, Symbol(problem, "_Sadda"))
+            push!(colnames, Symbol(problem, "_General"))
+            problem == :Ltwo && push!(colnames, Symbol(problem, "_Philpott"))
+        end
+    end
+    return colnames
+end
+
+function savetable(table::DataFrame;
+                   save::Bool       = false,
+                   savepath::String = "",
+                   savename::String = "comparison")
+    
+    savetable(table, :evaltime_mean; save = save, savepath = savepath, savename = savename)
+    savetable(table, :evaltime_std;  save = save, savepath = savepath, savename = savename)
+    savetable(table, :evals_mean;    save = save, savepath = savepath, savename = savename)
+    savetable(table, :evals_std;     save = save, savepath = savepath, savename = savename)
+    
+    save && CSV.write(joinpath(savepath,  "$(savename)_full_dataframe.csv"), table)
+
+    return 
+end
+
+
+function savetable(table::DataFrame,
+                   metric::Symbol;
+                   save::Bool       = false,
+                   savepath::String = "",
+                   savename::String = "comparison")
+
+    cols      = [:model, :constraint, :solver]
+
+    dimension = sort(unique(table.dimension))    
+    n         = length(dimension)
+    table_new = DataFrames.DataFrame(dimension = dimension)
+
+    dimension_small = sort(unique(table.dimension[table.solver .== "General"]))
+    l               = length(dimension_small)
+    table_new[!, :dimension_small] = vcat(dimension_small, [missing for i in 1:n-l])
+
+    for df in DataFrames.groupby(table, cols)
+        colname  = join([string(df[1, col]) for col in cols], "_") 
+        colvalue = df[!, metric]
+        l        = length(colvalue)
+
+        table_new[!, Symbol("$(colname)")] = vcat(colvalue, [missing for i in 1:n-l])
+    end
+
+    colnames = [replace(colname, "DRO_" => "")  for colname in string.(names(table_new))]
+    colnames = [replace(colname, "none_" => "") for colname in colnames]
+    names!(table_new, Symbol.(colnames))
+
+    table_new = table_new[!, tableformat(metric)]
+
+    save && CSV.write(joinpath(savepath,  "$(savename)_$(metric).csv"), table_new)
+    return table_new
+end
+
+
+# ----------------------------------------------------------------------------------------------------------
+# Plots
+# ----------------------------------------------------------------------------------------------------------
 function comparison(table::DataFrames.DataFrame,
                     varname::Symbol  = :evaltime;
                     xscale::Symbol   = :identity,
@@ -67,7 +179,6 @@ function comparison(table::DataFrames.DataFrame,
 end
 
 
-
 function h(λ::AbstractVector{<:Real},
            m::T;
            title::String    = "h_$(typeof(m.d).name)",
@@ -89,193 +200,60 @@ function h(λ::AbstractVector{<:Real},
 end
 
 
-function maketable(table::DataFrame;
-                   cols::Vector{<:Symbol} = [:constraint],
-                   save::Bool       = false,
-                   savepath::String = "",
-                   savename::String = "comparison")
+# ----------------------------------------------------------------------------------------------------------
+# Comparison solver
+# ----------------------------------------------------------------------------------------------------------
+function comparison_solver(solver::T,
+                           N::AbstractVector{<:Int};
+                           save::Bool        = false,
+                           savepath::String  = "",
+                           maxevals::Integer = 10) where {T<:Solver}
     
-     maketable(table, :evaltime_mean; cols = cols, save = save, savepath = savepath, savename = savename)
-     maketable(table, :evaltime_std;  cols = cols, save = save, savepath = savepath, savename = savename)
-     maketable(table, :evals_mean;    cols = cols, save = save, savepath = savepath, savename = savename)
-     maketable(table, :evals_std;     cols = cols, save = save, savepath = savepath, savename = savename)
-    return 
-end
+    ## DRO with divergences
+    @info "DRO with divergences"
+    table1 = eval_Divergences(solver, N; verbose = true,  maxevals = maxevals)
 
+    ## DRO with norms
+    @info "DRO with norms"
+    table2 = eval_Norms(solver, N; verbose = true,  maxevals = maxevals)
 
-function maketable(table::DataFrame,
-                   metric::Symbol;
-                   cols::Vector{<:Symbol} = [:constraint],
-                   save::Bool       = false,
-                   savepath::String = "",
-                   savename::String = "comparison")
+    ## Simplex1
+    @info "Simplex1 model"
+    table3 = eval_Simplex1(solver, N; verbose = true,  maxevals = maxevals)
 
-    table_new = DataFrames.DataFrame(dimension = sort(unique(table.dimension)))
-    for df in DataFrames.groupby(table, cols)
-        colname = join([string(df[1, col]) for col in cols], "_") 
+    ## Simplex2
+    @info "Simplex2 model"
+    table4 = eval_Simplex2(solver, N; verbose = true,  maxevals = maxevals)
 
-        table_new[!, Symbol("$(colname)")] = df[!, metric]
+    ## Plots - time comparison
+    comparison(table2, :evaltime; save = save, savepath = savepath, savename = "time_norms_$(T.name)")
+    comparison(table1, :evaltime; save = save, savepath = savepath, savename = "time_divergences_$(T.name)")
+    comparison(vcat(table3, table4), :evaltime; save = save, savepath = savepath, savename = "time_simplex_$(T.name)")
+
+    ## Plots - #objective function evaluation
+    if T <: Sadda
+        comparison(table2, :evals;    save = save, savepath = savepath, savename = "evals_norms_$(T.name)")
+        comparison(table1, :evals;    save = save, savepath = savepath, savename = "evals_divergences_$(T.name)")
+        comparison(vcat(table3, table4), :evals;    save = save, savepath = savepath, savename = "evals_simplex_$(T.name)")
     end
 
-    save && CSV.write(joinpath(savepath,  "$(savename)_$(metric).csv"), table_new)
-    return 
+    return vcat(table1, table2, table3, table4)
 end
 
 
 # ----------------------------------------------------------------------------------------------------------
-# Divergences
-# ----------------------------------------------------------------------------------------------------------
-function comparison_divergences(N::AbstractVector{<:Int};
-                                save::Bool = false,
-                                savepath::String = "",
-                                maxevals = 10)
-    
-    divergences = [Burg(), Hellinger(), ChiSquare(), ModifiedChiSquare(), KullbackLeibler()]
-
-    function eval(d, N; verbose = true)
-        return  Projections.benchmark(Sadda(), (n) -> get_DRO(n, d), N; verbose = verbose, maxevals = maxevals)
-    end
-
-    ## precompile for n
-    map((d) -> eval(d, [10, 100]; verbose = false), divergences)
-    
-    ## evaluation
-    table = mapreduce((d) -> eval(d, N), vcat, divergences)
-
-    ## save csv
-    maketable(table; save = save, savepath = savepath, savename = "comparison_divergences")
-
-    ## create and save figures
-    comparison(table, :evaltime; save = save, savepath = savepath, savename = "time_divergences")
-    comparison(table, :evals;    save = save, savepath = savepath, savename = "evals_divergences")
-    return table
-end
-
-
-# ----------------------------------------------------------------------------------------------------------
-# Norms
-# ----------------------------------------------------------------------------------------------------------
-function comparison_norms(N::AbstractVector{<:Int};
-                          save::Bool = false,
-                          savepath::String = "",
-                          maxevals = 10)
-    
-    norms = [Linf(), Lone(), Ltwo()]
-
-    function eval(d, N; verbose = true)
-        return  Projections.benchmark(Sadda(), (n) -> get_DRO(n, d), N; verbose = verbose, maxevals = maxevals)
-    end
-
-    ## precompile for n
-    map((d) -> eval(d, [10, 100]; verbose = false), norms)
-    
-    ## evaluation
-    table = mapreduce((d) -> eval(d, N), vcat, norms)
-
-    ## save csv
-    maketable(table; save = save, savepath = savepath, savename = "comparison_norms")
-
-    ## create and save figures
-    comparison(table, :evaltime; save = save, savepath = savepath, savename = "time_norms")
-    comparison(table, :evals;    save = save, savepath = savepath, savename = "evals_norms")
-    return table
-end
-
-
-# ----------------------------------------------------------------------------------------------------------
-# Simplex
-# ----------------------------------------------------------------------------------------------------------
-function comparison_simplex(N::AbstractVector{<:Int};
-                            save::Bool = false,
-                            savepath::String = "",
-                            maxevals = 10)
-
-    function eval(N; verbose = true)
-        row1 = Projections.benchmark(Sadda(), get_Simplex1, N; verbose = verbose, maxevals = maxevals)
-        row2 = Projections.benchmark(Sadda(), get_Simplex2, N; verbose = verbose, maxevals = maxevals)
-        return vcat(row1, row2)
-    end
-
-    ## precompile for n
-    eval([10, 100]; verbose = false)
-    
-    ## evaluation
-    table = eval(N)
-
-    ## save csv
-    cols = [:model]
-    maketable(table; cols = cols, save = save, savepath = savepath, savename = "comparison_simplex")
-
-
-    ## create and save figures
-    comparison(table, :evaltime; save = save, savepath = savepath, savename = "time_simplex")
-    comparison(table, :evals;    save = save, savepath = savepath, savename = "evals_simplex")
-    return table
-end
-
-
-
-# ----------------------------------------------------------------------------------------------------------
-# General solvers
-# ----------------------------------------------------------------------------------------------------------
-function comparison_general_solvers(N::AbstractVector{<:Int};
-                                    save::Bool = false,
-                                    savepath::String = "",
-                                    maxevals = 10)
-
-    constraints = [Linf(), Lone(), Ltwo(), 
-                   KullbackLeibler(), Burg(), Hellinger(), ChiSquare(), ModifiedChiSquare()]
-    
-    function eval(d, N; save = false, verbose = true)
-        t1    = Projections.benchmark(Sadda(),   (n) -> get_DRO(n, d), N; verbose = verbose, maxevals = maxevals)
-        t2    = Projections.benchmark(General(), (n) -> get_DRO(n, d), N; verbose = verbose, maxevals = maxevals)
-        table = vcat(t1, t2)
-
-        comparison(table, :evaltime; save = save, savepath = savepath, savename = "time_$(typeof(d).name)_general_solvers")
-        return  table
-    end
-
-    ## precompile for n
-    map((d) -> eval(d, [10, 100]; save = false, verbose = false), constraints)
-    
-    ## evaluation
-    table = mapreduce((d) -> eval(d, N; save = save), vcat, constraints)
-
-    ## save csv
-    cols = [:constraint, :solver]
-    maketable(table; cols = cols, save = save, savepath = savepath, savename = "comparison_general_solvers")
-
-    return table
-end
-
-
-# ----------------------------------------------------------------------------------------------------------
-# Philpott
+# Comparison Philpott
 # ----------------------------------------------------------------------------------------------------------
 function comparison_philpott(N::AbstractVector{<:Int};
-                             save::Bool = false,
-                             savepath::String = "",
-                             maxevals = 10)
-
-    solvers = [Projections.Sadda(), Projections.Philpott()]
+                             save::Bool        = false,
+                             savepath::String  = "",
+                             maxevals::Integer = 10)
     
-    function eval(N; verbose = true)
-        t1    = Projections.benchmark(Sadda(),    (n) -> get_DRO(n, Ltwo()), N; verbose = verbose, maxevals = maxevals)
-        t2    = Projections.benchmark(Philpott(), (n) -> get_DRO(n, Ltwo()), N; verbose = verbose, maxevals = maxevals)
-        return  vcat(t1, t2)
-    end
+    ## DRO with l2 norm and Philpott() solver
+    @info "DRO with l2 norm and Philpott() solver"
+    table = eval_DRO(Philpott(), Ltwo(), N; verbose = true,  maxevals = maxevals)
 
-    ## precompile for n
-    eval([10, 100]; verbose = false)
-    
-    ## evaluation
-    table = eval(N)
-
-    ## save csv
-    cols = [:constraint, :solver]
-    maketable(table; cols = cols, save = save, savepath = savepath, savename = "comparison_philpott")
-
-    ## create and save figures
+    ## Plots - time comparison
     comparison(table, :evaltime; save = save, savepath = savepath, savename = "time_philpott")
     return table
 end

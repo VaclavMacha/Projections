@@ -103,8 +103,19 @@ end
 
 Returns lower and upper bound for finding the root of the function `h` using the bisection method. 
 """
-bounds(m::Simplex2) = (-1e10, 1e10)
+function bounds(m::Simplex2)
+    f(μ)  = h(m, μ)
+    μ_min = 0.1
+    μ_max = 1
+    add_eval(2)
 
+    while f(μ_min)*f(μ_max) > 0 
+        μ_min *= 0.1
+        μ_max *= 10
+        add_eval(2)
+    end
+    return μ_min, μ_max
+end
 
 """
     optimal(s::Sadda, m::Simplex2)

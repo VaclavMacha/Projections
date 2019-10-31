@@ -1,10 +1,10 @@
 """
-    newton(d::Union{ChiSquare, ModifiedChiSquare}, m::DRO; maxiter::Integer = 1000, atol::Real = 1e-8)
+    newton(d::Union{ChiSquare, ModifiedChiSquare}, m::DRO; maxiter::Integer = 1000, atol::Real = 1e-6)
 
 A simple bisection method for finding the root of the function `h` for the DRO problem with
 χ²-distance or modified χ²-distance.
 """
-function newton(d::Union{ChiSquare, ModifiedChiSquare}, m::DRO; maxiter::Integer = 1000, atol::Real = 1e-8)
+function newton(d::Union{ChiSquare, ModifiedChiSquare}, m::DRO; maxiter::Integer = 1000, atol::Real = 1e-6)
     stats.optimizer  = "newton"
     f(λ)  = h(d, m, λ)
     ∇f(λ) = ∇h(d, m, λ)
@@ -18,11 +18,9 @@ function newton(d::Union{ChiSquare, ModifiedChiSquare}, m::DRO; maxiter::Integer
     for k in 1:maxiter
         abs(f_val) > atol || return λ
 
-        Δλ = f_val/∇f(λ)
-        abs(Δλ) > atol*1e-2 || return λ
-        
-        λ    -= Δλ
+        λ    -= f_val/∇f(λ)
         f_val = f(λ)
+
         add_eval()
     end
     @warn "Newton method for the DRO model with $(name(d)) reached maximal
@@ -32,12 +30,12 @@ end
 
 
 """
-    newton(d::Ltwo, m::DRO; maxiter::Integer = 1000, atol::Real = 1e-8)
+    newton(d::Ltwo, m::DRO; maxiter::Integer = 1000, atol::Real = 1e-6)
 
 A simple bisection method for finding the root of the function `h` for the DRO problem with
 l-2 norm.
 """
-function newton(d::Ltwo, m::DRO; maxiter::Integer = 1000, atol::Real = 1e-8)
+function newton(d::Ltwo, m::DRO; maxiter::Integer = 1000, atol::Real = 1e-6)
     stats.optimizer  = "newton"
     f(μ, λ)  = h(d, m, μ; λ = λ)
     ∇f(μ, λ) = ∇h(d, m, μ; λ = λ)
@@ -52,10 +50,7 @@ function newton(d::Ltwo, m::DRO; maxiter::Integer = 1000, atol::Real = 1e-8)
     for k in 1:maxiter
         abs(f_val) > atol || return μ
 
-        Δμ = f_val/∇f(μ, λ)
-        abs(Δμ) > atol*1e-2 || return λ
-        
-        μ    -= Δμ
+        μ    -= f_val/∇f(μ, λ)
         λ     = g(d, m, μ)
         f_val = f(μ, λ)
         add_eval()

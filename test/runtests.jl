@@ -12,10 +12,10 @@ norms = [Projections.Linf(),
          Projections.Lone(),
          Projections.Ltwo()]
          
-constraints = vcat(divergences, norms)        
+constraints = vcat(divergences, norms)
 
 n  = 100
-εs = vcat(1e-6:0.01:0.1, 0.2, 0.5, 1)
+εs = vcat(1e-5:0.01:0.1, 0.2, 0.5, 1)
 
 Test.@testset "All tests" begin
 
@@ -50,20 +50,10 @@ Test.@testset "All tests" begin
 
     Test.@testset "Simplex" begin
         q  = rand(n)
-        a  = rand(n)
-        b  = 1 .+ rand(n)
         lb = rand(n)./n
         ub = 1 .+ rand(n)
-        C1 = a'*(0.9*lb + 0.1*ub)
-        C2 = b'*(0.9*lb + 0.1*ub)
 
-        Test.@testset "Simplex 1" begin
-            m = Projections.Simplex1(q, lb, ub)
-            test_model(m)
-        end
-        Test.@testset "Simplex 2" begin
-            m = Projections.Simplex2(q, lb, ub, a, b, C1, C2)
-            test_model(m) 
-        end
+        m = Projections.Simplex(q, lb, ub)
+        test_model(m)
     end
 end

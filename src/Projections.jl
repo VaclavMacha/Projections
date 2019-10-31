@@ -4,14 +4,13 @@ import LinearAlgebra, Statistics, DataFrames, ProgressMeter
 import JuMP, Ipopt, CPLEX
 import Convex, ECOS
 
-export DRO, Simplex, Simplex1, Simplex2, solve
+export DRO, Simplex, solve
 export Solver, Sadda, General, Philpott
 export Constraint 
 export Divergence, KullbackLeibler, Burg, Hellinger, ChiSquare, ModifiedChiSquare
 export Norm, Linf, Lone, Ltwo, Philpott 
 
 abstract type Model end
-abstract type Simplex <: Model end
 
 abstract type Solver end
 struct Sadda <: Solver end

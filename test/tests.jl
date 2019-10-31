@@ -73,33 +73,23 @@ end
 # ----------------------------------------------------------------------------------------------------------
 # Simplex models
 # ----------------------------------------------------------------------------------------------------------
-function test_feasibility(m::T, p; atol::Real = 1e-6) where {T<:Projections.Simplex}
+function test_feasibility(m::Projections.Simplex, p; atol::Real = 1e-6)
     Test.@testset "Feasibility" begin
         Test.@test all(p .>= m.lb .- atol)
         Test.@test all(p .<= m.ub .+ atol)
-        if T <: Projections.Simplex1
-            Test.@test isapprox(sum(p), 1; atol = atol)
-        else
-            Test.@test isapprox(m.a'*p, m.C1; atol = atol)
-            Test.@test isapprox(m.b'*p, m.C2; atol = atol)
-        end
+        Test.@test isapprox(sum(p), 1; atol = atol)
     end
     return
 end
 
 
-function isfeasible(m::T, p; atol::Real = 1e-6) where {T<:Projections.Simplex}
+function isfeasible(m::Projections.Simplex, p; atol::Real = 1e-6)
 
     cond1 = all(p .>= m.lb .- atol)
     cond2 = all(p .<= m.ub .+ atol)
-    if T <: Projections.Simplex1
-        cond3 = isapprox(sum(p), 1; atol = atol)
-        cond4 = true
-    else
-        cond3 = isapprox(m.a'*p, m.C1; atol = atol)
-        cond4 = isapprox(m.b'*p, m.C2; atol = atol)
-    end
-    return all([cond1, cond2, cond3, cond4])
+    cond3 = isapprox(sum(p), 1; atol = atol)
+    
+    return all([cond1, cond2, cond3])
 end
 
 

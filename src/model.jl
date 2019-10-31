@@ -37,57 +37,24 @@ end
 
 
 """
-    Simplex1
+    Simplex
 
 A structure representing the DRO model.
 
 Fields:
 
 """
-struct Simplex1 <: Simplex
+struct Simplex <: Model
     q::Vector
     lb::Vector
     ub::Vector
 
-    function Simplex1(q::Vector{<:Real}, lb::Vector{<:Real}, ub::Vector{<:Real})
+    function Simplex(q::Vector{<:Real}, lb::Vector{<:Real}, ub::Vector{<:Real})
 
         @assert sum(lb) <= 1   "The feasible set is empty: sum(lb) = $(sum(lb)) > 1"
         @assert sum(ub) >= 1   "The feasible set is empty: sum(ub) = $(sum(ub)) < 1"
         @assert all(ub .>= lb) "Upper bounds `ub` mus be must greater or equl to lower bounds"
 
         return new(q, lb, ub)
-    end
-end
-
-
-"""
-    Simplex2
-
-A structure representing the DRO model.
-
-Fields:
-
-"""
-struct Simplex2 <: Simplex
-    q::Vector
-    lb::Vector
-    ub::Vector
-    a::Vector
-    b::Vector
-    C1::Real
-    C2::Real
-
-    function Simplex2(q::Vector{<:Real},
-                      lb::Vector{<:Real},
-                      ub::Vector{<:Real},
-                      a::Vector{<:Real},
-                      b::Vector{<:Real},
-                      C1::Real,
-                      C2::Real)
-
-        @assert all(ub .>= lb) "Upper bounds `ub` mus be must greater or equl to lower bounds"
-        @assert all(a .>= 0)   "All components of the vector `a` must be nonnegative."
-
-        return new(q, lb, ub, a, b, C1, C2)
     end
 end

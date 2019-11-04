@@ -4,7 +4,7 @@ import LinearAlgebra, Statistics, DataFrames, ProgressMeter
 import JuMP, Ipopt, CPLEX
 import Convex, ECOS
 
-export DRO, Simplex, solve
+export DRO, Simplex, solve, benchmark
 export Solver, Sadda, General, Philpott
 export Constraint 
 export Divergence, KullbackLeibler, Burg, Hellinger, ChiSquare, ModifiedChiSquare

@@ -14,13 +14,13 @@ N2 = @. ceil(Int64, 10^l2)
 
 ## benchmarks
 comparison_solver(Sadda(), N1; save = false, maxevals = 1);
-@time table1 = comparison_solver(Sadda(), N1; save = true,  savepath = savepath, maxevals = 20);
+@time table1 = comparison_solver(Sadda(), N1; save = true,  savepath = savepath, maxevals = 100);
 
 comparison_solver(General(), N2; save = false, maxevals = 1);
-@time table2 = comparison_solver(General(), N2; save = true,  savepath = savepath, maxevals = 20);
+@time table2 = comparison_solver(General(), N2; save = true,  savepath = savepath, maxevals = 100);
 
 comparison_philpott(N2; save = false, maxevals = 1);
-@time table3 = comparison_philpott(N2; save = true, savepath = savepath, maxevals = 20);
+@time table3 = comparison_philpott(N2; save = true, savepath = savepath, maxevals = 100);
 
 ## tables
 savetable(vcat(table1, table2, table3), save = true, savepath = savepath, savename = "comparison") 

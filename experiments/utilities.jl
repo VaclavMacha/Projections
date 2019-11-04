@@ -10,27 +10,13 @@ function model_DRO(n::Int, d::Projections.Constraint, ε::Real = 0.1; seed::Int 
 end
 
 
-function model_Simplex1(n::Int; seed::Int = 1234)
+function model_Simplex(n::Int; seed::Int = 1234)
     Random.seed!(seed);    
 
     q  = rand(n)
     lb = rand(n)./n
     ub = 1 .+ rand(n)
-    return Projections.Simplex1(q, lb, ub)
-end
-
-
-function model_Simplex2(n::Int; seed::Int = 1234)
-    Random.seed!(seed);    
-
-    q  = rand(n)
-    a  = rand(n)
-    b  = 1 .+ rand(n)
-    lb = rand(n)./n
-    ub = 1 .+ rand(n)
-    C1 = a'*(0.9*lb + 0.1*ub)
-    C2 = b'*(0.9*lb + 0.1*ub)
-    return Projections.Simplex2(q, lb, ub, a, b, C1, C2)
+    return Projections.Simplex(q, lb, ub)
 end
 
 
@@ -56,13 +42,8 @@ function eval_DRO(solver::Solver, d, N; kwargs...)
 end
 
 
-function eval_Simplex1(solver::Solver, N; kwargs...)
-    return Projections.benchmark(solver, model_Simplex1, N; kwargs...)
-end
-
-
-function eval_Simplex2(solver::Solver, N; kwargs...)
-    return Projections.benchmark(solver, model_Simplex2, N; kwargs...) 
+function eval_Simplex(solver::Solver, N; kwargs...)
+    return Projections.benchmark(solver, model_Simplex, N; kwargs...)
 end
 
 
@@ -78,9 +59,8 @@ function tableformat(metric::Symbol)
 
     if metric in [:evals_mean, :evals_std] 
         push!(colnames, :Ltwo_Sadda)
-        push!(colnames, :Simplex2_Sadda)
     else
-        for problem in [:Linf, :Lone, :Ltwo, :Simplex1, :Simplex2]
+        for problem in [:Linf, :Lone, :Ltwo, :Simplex]
             push!(colnames, Symbol(problem, "_Sadda"))
             push!(colnames, Symbol(problem, "_General"))
             problem == :Ltwo && push!(colnames, Symbol(problem, "_Philpott"))
@@ -218,26 +198,22 @@ function comparison_solver(solver::T,
     table2 = eval_Norms(solver, N; verbose = true,  maxevals = maxevals)
 
     ## Simplex1
-    @info "Simplex1 model"
-    table3 = eval_Simplex1(solver, N; verbose = true,  maxevals = maxevals)
-
-    ## Simplex2
-    @info "Simplex2 model"
-    table4 = eval_Simplex2(solver, N; verbose = true,  maxevals = maxevals)
+    @info "Simplex model"
+    table3 = eval_Simplex(solver, N; verbose = true,  maxevals = maxevals)
 
     ## Plots - time comparison
     comparison(table2, :evaltime; save = save, savepath = savepath, savename = "time_norms_$(T.name)")
     comparison(table1, :evaltime; save = save, savepath = savepath, savename = "time_divergences_$(T.name)")
-    comparison(vcat(table3, table4), :evaltime; save = save, savepath = savepath, savename = "time_simplex_$(T.name)")
+    comparison(table3, :evaltime; save = save, savepath = savepath, savename = "time_simplex_$(T.name)")
 
     ## Plots - #objective function evaluation
     if T <: Sadda
         comparison(table2, :evals;    save = save, savepath = savepath, savename = "evals_norms_$(T.name)")
         comparison(table1, :evals;    save = save, savepath = savepath, savename = "evals_divergences_$(T.name)")
-        comparison(vcat(table3, table4), :evals;    save = save, savepath = savepath, savename = "evals_simplex_$(T.name)")
+        comparison(table3, :evals;    save = save, savepath = savepath, savename = "evals_simplex_$(T.name)")
     end
 
-    return vcat(table1, table2, table3, table4)
+    return vcat(table1, table2, table3)
 end
 
 

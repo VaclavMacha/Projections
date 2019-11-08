@@ -4,7 +4,7 @@ path     = @__DIR__
 savepath = "/home/vaclav/GoogleDrive/projects/results/2019/Projections/results/"
 # savepath = path
 
-include(joinpath(path, "utilities.jl"))
+include(joinpath(path, "experiments.jl"))
 
 ## initialization
 l1 = unique(vcat(2:0.1:3, 3:0.05:6));

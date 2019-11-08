@@ -16,7 +16,7 @@ This package provides an interface to solve the three following problems
 
 1. distributionally robust optimization (DRO) with φ -divergence or norm in constraints. All implemented φ -divergences and norms are presented in the following table
 
-| Name                          | Constructor           | Sadda solver | General solver | Philpott solver |
+| Name                          | Constructor           | Our solver   | General solver | Philpott solver |
 | ---                           | :---:                 | :---:        | :---:          | :---:           |
 | *Kullback-Leibler divergence* | `KullbackLeibler()`   | ✔            | Ipopt          | ✘               |
 | *Burg entropy*                | `Burg()`              | ✔            | Ipopt          | ✘               |
@@ -31,7 +31,7 @@ This package provides an interface to solve the three following problems
 
 The interface provides 3 solvers: 
 
-1. `Sadda()` - our approach how to solve DRO
+1. `Our()` - our approach
 2. `General()` - general purpose solvers such as [Ipopt](https://github.com/coin-or/Ipopt) or [CPLEX](https://www.ibm.com/products/ilog-cplex-optimization-studio)
 3. `Philpott()` - algorithm presented in [[Philpott 2018]](https://link.springer.com/article/10.1007/s10287-018-0314-0) for the DRO with l-2 norm
 
@@ -40,7 +40,7 @@ The interface provides 3 solvers:
 
 
 
-The following example shows how to solve the DRO with Burg distance using `Sadda()` and `General()` solver
+The following example shows how to solve the DRO with Burg distance using `Our()` and `General()` solver
 ```julia
 julia> using Projections, Random, LinearAlgebra                                                                                           
                                                                                                                                           
@@ -58,7 +58,7 @@ julia> ε  = 0.1;
                                                                                                       
 julia> model  = Projections.DRO(d, q, c, ε);                                                                                              
                        
-julia> p1 = Projections.solve(Sadda(), model);                                                                                            
+julia> p1 = Projections.solve(Our(), model);                                                                                            
                                                                                                                                           
 julia> p2 = Projections.solve(General(), model);                                                                                          
 
@@ -68,7 +68,7 @@ julia> LinearAlgebra.norm(p1 - p2)
 
 ## Simplex
 
-The following example shows how to solve the Simplex problem using `Sadda()` and `General()` solver
+The following example shows how to solve the Simplex problem using `Our()` and `General()` solver
 ```julia
 julia> using Projections, Random, LinearAlgebra                                                                                      
 
@@ -84,7 +84,7 @@ julia> ub = 1 .+ rand(n);
 
 julia> model  = Projections.Simplex(q, lb, ub);                                                                                     
 
-julia> p1 = Projections.solve(Sadda(), model);                                                                                       
+julia> p1 = Projections.solve(Our(), model);                                                                                       
 
 julia> p2 = Projections.solve(General(), model);                                                                                     
 

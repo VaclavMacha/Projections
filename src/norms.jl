@@ -26,11 +26,11 @@ normtype(d::Linf) = Inf
 
 
 """
-    optimal(s::Sadda, d::Linf, m::DRO; kwargs...)
+    optimal(s::Our, d::Linf, m::DRO; kwargs...)
 
 Returns the optimal solution of the DRO model 'm' with l-infinity norm. 
 """
-function optimal(s::Sadda, d::Linf, m::DRO)
+function optimal(s::Our, d::Linf, m::DRO)
     c      = .- m.c
     perm   = sortperm(c)
     c      = c[perm]
@@ -95,11 +95,11 @@ normtype(d::Lone) = 1
 
 
 """
-    optimal(s::Sadda, d::Lone, m::DRO)
+    optimal(s::Our, d::Lone, m::DRO)
 
 Returns the optimal solution of the DRO model 'm' with l-1 norm.
 """
-function optimal(s::Sadda, d::Lone, m::DRO; kwargs...)
+function optimal(s::Our, d::Lone, m::DRO; kwargs...)
     c    = .- m.c
     perm = sortperm(c)
     c    = c[perm]
@@ -219,11 +219,11 @@ end
 
 
 """
-    optimal(s::Sadda, d::Ltwo, m::DRO; kwargs...) 
+    optimal(s::Our, d::Ltwo, m::DRO; kwargs...) 
 
 Returns the optimal solution of the DRO model 'm' with l-2 norm.
 """
-function optimal(s::Sadda, d::Ltwo, m::DRO; kwargs...)
+function optimal(s::Our, d::Ltwo, m::DRO; kwargs...)
     Ilen = length(m.Imax)
     Isum = sum(m.q[m.Imax])
     p    = zero(m.q)

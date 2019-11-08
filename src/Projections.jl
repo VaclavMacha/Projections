@@ -5,7 +5,7 @@ import JuMP, Ipopt, CPLEX
 import Convex, ECOS
 
 export DRO, Simplex, solve, benchmark
-export Solver, Sadda, General, Philpott
+export Solver, Our, General, Philpott
 export Constraint 
 export Divergence, KullbackLeibler, Burg, Hellinger, ChiSquare, ModifiedChiSquare
 export Norm, Linf, Lone, Ltwo, Philpott 
@@ -13,7 +13,7 @@ export Norm, Linf, Lone, Ltwo, Philpott
 abstract type Model end
 
 abstract type Solver end
-struct Sadda <: Solver end
+struct Our <: Solver end
 struct General <: Solver end
 struct Philpott <: Solver end
 

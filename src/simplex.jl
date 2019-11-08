@@ -38,12 +38,12 @@ end
 
 
 """
-    optimal(s::Sadda, m::Simplex)
+    optimal(s::Our, m::Simplex)
 
 Returns the optimal solution of the simplex model 'm' with
 two linear constraints and lower and upper bounds. 
 """
-function optimal(s::Sadda, m::Simplex; kwargs...)
+function optimal(s::Our, m::Simplex; kwargs...)
     λ = h(m)
     
     return min.(m.ub, max.(m.lb, m.q .- λ))

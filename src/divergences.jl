@@ -49,11 +49,11 @@ end
 
 
 """
-    function optimal(s::Sadda, d::KullbackLeibler, m::DRO; kwargs...)  
+    function optimal(s::Our, d::KullbackLeibler, m::DRO; kwargs...)  
 
 Returns the optimal solution of the DRO model 'm' with Kullback-Leibler divergence.
 """
-function optimal(s::Sadda, d::KullbackLeibler, m::DRO; kwargs...) 
+function optimal(s::Our, d::KullbackLeibler, m::DRO; kwargs...) 
     p = optimal_simple(d, m)
     ϕ = generate(d)
 
@@ -109,11 +109,11 @@ end
 
 
 """
-    function optimal(s::Sadda, d::Burg, m::DRO; kwargs...)  
+    function optimal(s::Our, d::Burg, m::DRO; kwargs...)  
 
 Returns the optimal solution of the DRO model 'm' with Burg entropy.
 """
-function optimal(s::Sadda, d::Burg, m::DRO; kwargs...) 
+function optimal(s::Our, d::Burg, m::DRO; kwargs...) 
     p = optimal_simple(d, m)
     ϕ = generate(d)
 
@@ -169,11 +169,11 @@ end
 
 
 """
-    function optimal(s::Sadda, d::Hellinger, m::DRO; kwargs...)  
+    function optimal(s::Our, d::Hellinger, m::DRO; kwargs...)  
 
 Returns the optimal solution of the DRO model 'm' with Hellinger distance.
 """
-function optimal(s::Sadda, d::Hellinger, m::DRO; kwargs...) 
+function optimal(s::Our, d::Hellinger, m::DRO; kwargs...) 
     p = optimal_simple(d, m)
     ϕ = generate(d)
 
@@ -250,11 +250,11 @@ end
 
 
 """
-    function optimal(s::Sadda, d::ChiSquare, m::DRO; kwargs...)  
+    function optimal(s::Our, d::ChiSquare, m::DRO; kwargs...)  
 
 Returns the optimal solution of the DRO model 'm' with χ²-distance.
 """
-function optimal(s::Sadda, d::ChiSquare, m::DRO; kwargs...) 
+function optimal(s::Our, d::ChiSquare, m::DRO; kwargs...) 
     p = optimal_simple(d, m)
     ϕ = generate(d)
 
@@ -330,11 +330,11 @@ end
 
 
 """
-    function optimal(s::Sadda, d::ModifiedChiSquare, m::DRO; kwargs...)  
+    function optimal(s::Our, d::ModifiedChiSquare, m::DRO; kwargs...)  
 
 Returns the optimal solution of the DRO model 'm' with modified χ²-distance.
 """
-function optimal(s::Sadda, d::ModifiedChiSquare, m::DRO; kwargs...)
+function optimal(s::Our, d::ModifiedChiSquare, m::DRO; kwargs...)
     p = optimal_simple(d, m)
     ϕ = generate(d)
 

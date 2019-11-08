@@ -53,7 +53,7 @@ end
 
 function test_model(m::Projections.DRO)
     Test.@testset "Comparison with the general solver" begin 
-        p       = Projections.solve(Projections.Sadda(), m);
+        p       = Projections.solve(Projections.Our(), m);
         psolver = Projections.solve(Projections.General(), m);
 
         test_feasibility(m, p; atol = 1e-6)
@@ -105,7 +105,7 @@ end
 
 function test_model(m::Projections.Simplex)
     Test.@testset "Comparison with the general solver" begin 
-        p       = Projections.solve(Projections.Sadda(), m);
+        p       = Projections.solve(Projections.Our(), m);
         psolver = Projections.solve(Projections.General(), m);
 
         test_feasibility(m, p; atol = 1e-6)

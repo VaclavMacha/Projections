@@ -53,15 +53,15 @@ end
 function tableformat(metric::Symbol)
     colnames = [:dimension, :dimension_small]
     for problem in [:KullbackLeibler, :Hellinger, :Burg, :ChiSquare, :ModifiedChiSquare]
-        push!(colnames, Symbol(problem, "_Sadda"))
+        push!(colnames, Symbol(problem, "_Our"))
         metric in [:evals_mean, :evals_std] || push!(colnames, Symbol(problem, "_General"))
     end
 
     if metric in [:evals_mean, :evals_std] 
-        push!(colnames, :Ltwo_Sadda)
+        push!(colnames, :Ltwo_Our)
     else
         for problem in [:Linf, :Lone, :Ltwo, :Simplex]
-            push!(colnames, Symbol(problem, "_Sadda"))
+            push!(colnames, Symbol(problem, "_Our"))
             push!(colnames, Symbol(problem, "_General"))
             problem == :Ltwo && push!(colnames, Symbol(problem, "_Philpott"))
         end
@@ -207,7 +207,7 @@ function comparison_solver(solver::T,
     comparison(table3, :evaltime; save = save, savepath = savepath, savename = "time_simplex_$(T.name)")
 
     ## Plots - #objective function evaluation
-    if T <: Sadda
+    if T <: Our
         comparison(table2, :evals;    save = save, savepath = savepath, savename = "evals_norms_$(T.name)")
         comparison(table1, :evals;    save = save, savepath = savepath, savename = "evals_divergences_$(T.name)")
         comparison(table3, :evals;    save = save, savepath = savepath, savename = "evals_simplex_$(T.name)")

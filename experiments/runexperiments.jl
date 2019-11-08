@@ -14,8 +14,8 @@ N1 = @. ceil(Int64, 10^l1)
 N2 = @. ceil(Int64, 10^l2)
 
 ## benchmarks
-comparison_solver(Sadda(), N1; save = false, maxevals = 1);
-@time table1 = comparison_solver(Sadda(), N1; save = save,  savepath = savepath, maxevals = 100);
+comparison_solver(Our(), N1; save = false, maxevals = 1);
+@time table1 = comparison_solver(Our(), N1; save = save,  savepath = savepath, maxevals = 100);
 
 comparison_solver(General(), N2; save = false, maxevals = 1);
 @time table2 = comparison_solver(General(), N2; save = save,  savepath = savepath, maxevals = 100);

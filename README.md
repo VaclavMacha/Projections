@@ -91,3 +91,20 @@ julia> p2 = Projections.solve(General(), model);
 julia> LinearAlgebra.norm(p1 - p2)                                                                                                   
 2.9749633079816928e-8
 ```
+
+---
+
+If you have used Projections in a scientific project that lead to a publication, we'd appreciate you citing the paper associated with it:
+
+```
+@article{adam2020projections,
+  author = {L. Adam and V. Mácha},
+  title = {Projections onto the canonical simplex with additional linear inequalities},
+  journal = {Optimization Methods and Software},
+  pages = {1-29},
+  year  = {2020},
+  publisher = {Taylor & Francis},
+  doi = {10.1080/10556788.2020.1797023},
+  URL = {https://doi.org/10.1080/10556788.2020.1797023},
+}
+```
